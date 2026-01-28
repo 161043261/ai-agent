@@ -103,6 +103,7 @@ OLLAMA_MODEL=qwen2.5:7b
 ollama serve
 
 # 2. 拉取模型 (推荐 qwen2.5)
+ollama pull qwen2.5-coder:7b
 ollama pull qwen2.5:7b
 # 或使用其他模型：
 # ollama pull llama3.2:3b
