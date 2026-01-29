@@ -1,9 +1,5 @@
-import Fastify, {
-  FastifyInstance,
-  FastifyRequest,
-  FastifyReply,
-} from "fastify";
-import fastifyCors from "@fastify/cors";
+import express, { Express, Request, Response } from "express";
+import cors from "cors";
 import { randomUUID } from "node:crypto";
 import { ImageSearchTool } from "../tools";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -27,16 +23,16 @@ interface SessionData {
 }
 
 /**
- * Fastify MCP 服务器 - 使用 StreamableHTTPServerTransport (新版协议)
+ * Express MCP 服务器 - 使用 StreamableHTTPServerTransport (新版协议)
  */
 export class SseServer {
-  private app: FastifyInstance;
+  private app: Express;
   private imageSearchTool: ImageSearchTool;
   // 存储每个会话的数据
   private sessions: Map<string, SessionData> = new Map();
 
   constructor() {
-    this.app = Fastify({ logger: true });
+    this.app = express();
     this.imageSearchTool = new ImageSearchTool();
   }
 
@@ -152,112 +148,101 @@ export class SseServer {
   /**
    * 设置中间件和路由
    */
-  private async setupServer(): Promise<void> {
+  private setupServer(): void {
     // CORS 中间件
-    await this.app.register(fastifyCors, {
-      origin: true,
-    });
+    this.app.use(cors());
+
+    // JSON body parser
+    this.app.use(express.json());
 
     // 健康检查
-    this.app.get(
-      "/health",
-      async (_request: FastifyRequest, reply: FastifyReply) => {
-        return reply.send({
-          status: "ok",
-          server: "yu-image-search-mcp-server",
-          version: "0.0.1",
-          activeSessions: this.sessions.size,
-          timestamp: new Date().toISOString(),
-        });
-      },
-    );
+    this.app.get("/health", (_req: Request, res: Response) => {
+      res.json({
+        status: "ok",
+        server: "yu-image-search-mcp-server",
+        version: "0.0.1",
+        activeSessions: this.sessions.size,
+        timestamp: new Date().toISOString(),
+      });
+    });
 
     // MCP 端点 - 处理所有 MCP 请求 (GET/POST/DELETE)
-    this.app.all(
-      "/mcp",
-      async (request: FastifyRequest, reply: FastifyReply) => {
-        console.log(`MCP request received: ${request.method}`);
+    this.app.all("/mcp", async (req: Request, res: Response) => {
+      console.log(`MCP request received: ${req.method}`);
 
-        const sessionId = request.headers["mcp-session-id"] as
-          | string
-          | undefined;
+      const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-        try {
-          const req = request.raw as any;
-          const res = reply.raw;
-
-          // 如果有 sessionId，尝试获取已存在的 session
-          if (sessionId && this.sessions.has(sessionId)) {
-            const session = this.sessions.get(sessionId)!;
-            // 重置超时计时器
-            this.resetSessionTimeout(sessionId);
-            await session.transport.handleRequest(req, res, request.body);
-            return reply.hijack();
-          }
-
-          // 新连接：创建新的 transport 和 server
-          const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => randomUUID(),
-            onsessioninitialized: (newSessionId) => {
-              const server = this.createMcpServer();
-
-              // 创建超时计时器
-              const timeoutId = setTimeout(() => {
-                this.destroySession(newSessionId, "timeout");
-              }, SESSION_TIMEOUT_MS);
-
-              // 保存会话数据
-              this.sessions.set(newSessionId, {
-                transport,
-                server,
-                timeoutId,
-                lastActivity: Date.now(),
-              });
-
-              console.log(
-                `New MCP session created: ${newSessionId}, active sessions: ${this.sessions.size}`,
-              );
-            },
-          });
-
-          // 当 transport 关闭时清理会话
-          transport.onclose = () => {
-            for (const [id, session] of this.sessions.entries()) {
-              if (session.transport === transport) {
-                this.destroySession(id, "transport closed");
-                break;
-              }
-            }
-          };
-
-          const server = this.createMcpServer();
-          await server.connect(transport);
-          await transport.handleRequest(req, res, request.body);
-
-          return reply.hijack();
-        } catch (error) {
-          console.error("Error handling MCP request:", error);
-          return reply.status(500).send("Error handling request");
+      try {
+        // 如果有 sessionId，尝试获取已存在的 session
+        if (sessionId && this.sessions.has(sessionId)) {
+          const session = this.sessions.get(sessionId)!;
+          // 重置超时计时器
+          this.resetSessionTimeout(sessionId);
+          await session.transport.handleRequest(req, res, req.body);
+          return;
         }
-      },
-    );
+
+        // 新连接：创建新的 transport 和 server
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (newSessionId) => {
+            const server = this.createMcpServer();
+
+            // 创建超时计时器
+            const timeoutId = setTimeout(() => {
+              this.destroySession(newSessionId, "timeout");
+            }, SESSION_TIMEOUT_MS);
+
+            // 保存会话数据
+            this.sessions.set(newSessionId, {
+              transport,
+              server,
+              timeoutId,
+              lastActivity: Date.now(),
+            });
+
+            console.log(
+              `New MCP session created: ${newSessionId}, active sessions: ${this.sessions.size}`,
+            );
+          },
+        });
+
+        // 当 transport 关闭时清理会话
+        transport.onclose = () => {
+          for (const [id, session] of this.sessions.entries()) {
+            if (session.transport === transport) {
+              this.destroySession(id, "transport closed");
+              break;
+            }
+          }
+        };
+
+        const server = this.createMcpServer();
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        console.error("Error handling MCP request:", error);
+        if (!res.headersSent) {
+          res.status(500).send("Error handling request");
+        }
+      }
+    });
   }
 
   /**
    * 启动服务器
    */
   async start(port: number): Promise<void> {
-    await this.setupServer();
+    this.setupServer();
 
-    try {
-      await this.app.listen({ port, host: "0.0.0.0" });
-      console.log(`MCP Server running on http://localhost:${port}`);
-      console.log(`Health check: http://localhost:${port}/health`);
-      console.log(`MCP endpoint: http://localhost:${port}/mcp`);
-      console.log(`Session timeout: ${SESSION_TIMEOUT_MS / 1000}s`);
-    } catch (err) {
-      this.app.log.error(err);
-      process.exit(1);
-    }
+    return new Promise((resolve) => {
+      this.app.listen(port, () => {
+        console.log(`MCP Server running on http://localhost:${port}`);
+        console.log(`Health check: http://localhost:${port}/health`);
+        console.log(`MCP endpoint: http://localhost:${port}/mcp`);
+        console.log(`Session timeout: ${SESSION_TIMEOUT_MS / 1000}s`);
+        resolve();
+      });
+    });
   }
 }
