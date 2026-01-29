@@ -3,59 +3,24 @@ import { ChatModel } from '../llm/chat-model.interface';
 import { createUserMessage } from '../agent/model/message.interface';
 import { Document } from './vector-store.interface';
 
-const KEYWORD_EXTRACT_PROMPT = `你是一个关键词提取助手。请从以下文档内容中提取最重要的关键词。
-
+const KEYWORD_EXTRACTION_PROMPT = `你是一个关键词提取助手。请从以下文本中提取5-10个关键词。
 要求：
-1. 提取 {keywordCount} 个最相关的关键词
-2. 关键词应该能够准确概括文档主题
-3. 只输出关键词，用逗号分隔，不要输出其他内容
-
-文档内容：
-{content}`;
+1. 关键词应该是文本中的核心概念
+2. 包含专有名词、技术术语
+3. 返回JSON数组格式，例如：["关键词1", "关键词2"]
+4. 只返回JSON数组，不要其他内容`;
 
 /**
- * 基于 AI 的关键词增强器
- * 使用 AI 自动为文档补充关键词元信息
+ * 关键词丰富器
+ * 为文档自动补充关键词元信息，提高检索精度
  */
 export class KeywordEnricher {
   private readonly logger = new Logger(KeywordEnricher.name);
 
-  constructor(
-    private chatModel: ChatModel,
-    private keywordCount: number = 5,
-  ) {}
+  constructor(private chatModel: ChatModel) {}
 
   /**
-   * 为单个文档提取关键词
-   */
-  async extractKeywords(content: string): Promise<string[]> {
-    try {
-      const prompt = KEYWORD_EXTRACT_PROMPT.replace(
-        '{keywordCount}',
-        String(this.keywordCount),
-      ).replace(
-        '{content}',
-        content.substring(0, 2000), // 限制内容长度
-      );
-
-      const response = await this.chatModel.chat({
-        messages: [createUserMessage(prompt)],
-      });
-
-      const keywords = response.content
-        .split(/[,，]/)
-        .map((k) => k.trim())
-        .filter((k) => k.length > 0);
-
-      return keywords.slice(0, this.keywordCount);
-    } catch (error) {
-      this.logger.error('Failed to extract keywords', error);
-      return [];
-    }
-  }
-
-  /**
-   * 为文档列表补充关键词元信息
+   * 为文档列表添加关键词元信息
    */
   async enrichDocuments(documents: Document[]): Promise<Document[]> {
     const enrichedDocs: Document[] = [];
@@ -63,19 +28,17 @@ export class KeywordEnricher {
     for (const doc of documents) {
       try {
         const keywords = await this.extractKeywords(doc.content);
-
         enrichedDocs.push({
           ...doc,
           metadata: {
             ...doc.metadata,
-            keywords: keywords.join(','),
-            keywordList: keywords,
+            keywords,
           },
         });
-
-        this.logger.log(`Enriched document ${doc.id} with keywords: ${keywords.join(', ')}`);
+        this.logger.debug(`Enriched document ${doc.id} with ${keywords.length} keywords`);
       } catch (error) {
-        this.logger.error(`Failed to enrich document ${doc.id}`, error);
+        // 如果提取失败，保留原文档
+        this.logger.warn(`Failed to enrich document ${doc.id}, keeping original`);
         enrichedDocs.push(doc);
       }
     }
@@ -84,33 +47,69 @@ export class KeywordEnricher {
   }
 
   /**
-   * 批量为文档提取关键词（并行处理）
+   * 从文本中提取关键词
    */
-  async enrichDocumentsBatch(documents: Document[], batchSize: number = 5): Promise<Document[]> {
-    const enrichedDocs: Document[] = [];
+  private async extractKeywords(content: string): Promise<string[]> {
+    // 截取内容前1000字符，避免token过多
+    const truncatedContent = content.slice(0, 1000);
 
-    for (let i = 0; i < documents.length; i += batchSize) {
-      const batch = documents.slice(i, i + batchSize);
-      const batchPromises = batch.map(async (doc) => {
-        try {
-          const keywords = await this.extractKeywords(doc.content);
-          return {
-            ...doc,
-            metadata: {
-              ...doc.metadata,
-              keywords: keywords.join(','),
-              keywordList: keywords,
-            },
-          };
-        } catch {
-          return doc;
-        }
-      });
+    const response = await this.chatModel.chat({
+      messages: [createUserMessage(`请提取以下文本的关键词：\n\n${truncatedContent}`)],
+      systemPrompt: KEYWORD_EXTRACTION_PROMPT,
+    });
 
-      const results = await Promise.all(batchPromises);
-      enrichedDocs.push(...results);
+    try {
+      // 尝试解析JSON数组
+      const parsed = JSON.parse(response.content.trim());
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item) => typeof item === 'string');
+      }
+      return [];
+    } catch {
+      // 如果解析失败，尝试从文本中提取
+      return this.fallbackExtract(response.content);
+    }
+  }
+
+  /**
+   * 备用提取方法：从非JSON格式文本中提取关键词
+   */
+  private fallbackExtract(text: string): string[] {
+    // 尝试匹配引号包围的词
+    const matches = text.match(/["'"]([^"'"]+)["'"]/g);
+    if (matches) {
+      return matches.map((m) => m.replace(/["'"]/g, '').trim()).filter((k) => k.length > 0);
+    }
+    // 尝试按逗号分割
+    const parts = text.split(/[,，]/);
+    if (parts.length > 1) {
+      return parts.map((p) => p.trim()).filter((k) => k.length > 0 && k.length < 20);
+    }
+    return [];
+  }
+
+  /**
+   * 基于关键词的查询增强
+   */
+  async augmentQuery(query: string, documentKeywords: string[][]): Promise<string> {
+    // 统计关键词频率
+    const keywordFreq = new Map<string, number>();
+    for (const keywords of documentKeywords) {
+      for (const keyword of keywords) {
+        keywordFreq.set(keyword, (keywordFreq.get(keyword) || 0) + 1);
+      }
     }
 
-    return enrichedDocs;
+    // 取频率最高的关键词
+    const topKeywords = Array.from(keywordFreq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([keyword]) => keyword);
+
+    if (topKeywords.length === 0) {
+      return query;
+    }
+
+    return `${query} ${topKeywords.join(' ')}`;
   }
 }

@@ -1,3 +1,5 @@
+import { FilterExpression } from './filter-expression';
+
 /**
  * 文档接口
  */
@@ -17,6 +19,18 @@ export interface SearchResult {
 }
 
 /**
+ * 搜索选项
+ */
+export interface SearchOptions {
+  /** 返回结果数量 */
+  topK?: number;
+  /** 过滤表达式 */
+  filterExpression?: FilterExpression;
+  /** 相似度阈值 (0-1) */
+  similarityThreshold?: number;
+}
+
+/**
  * 向量存储接口
  */
 export interface VectorStore {
@@ -27,8 +41,17 @@ export interface VectorStore {
 
   /**
    * 搜索相似文档
+   * @param query 查询文本
+   * @param topK 返回结果数量（简化调用）
    */
   search(query: string, topK?: number): Promise<SearchResult[]>;
+
+  /**
+   * 带选项的搜索（支持过滤和阈值）
+   * @param query 查询文本
+   * @param options 搜索选项
+   */
+  searchWithOptions?(query: string, options: SearchOptions): Promise<SearchResult[]>;
 
   /**
    * 删除文档

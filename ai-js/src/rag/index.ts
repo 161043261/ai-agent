@@ -11,3 +11,4 @@ export * from './token-text-splitter';
 export * from './document-retriever';
 export * from './contextual-query-augmenter';
 export * from './multi-query-expander';
+export * from './filter-expression';

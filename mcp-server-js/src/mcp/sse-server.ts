@@ -5,10 +5,13 @@ import Fastify, {
 } from "fastify";
 import fastifyCors from "@fastify/cors";
 import { randomUUID } from "node:crypto";
-import { z } from "zod";
 import { ImageSearchTool } from "../tools";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 
 // 会话超时时间 (毫秒) - 从环境变量读取，默认 1 小时
 const SESSION_TIMEOUT_MS = parseInt(
@@ -41,18 +44,46 @@ export class SseServer {
    * 创建 MCP Server 实例
    */
   private createMcpServer(): McpServer {
-    const server = new McpServer({
-      name: "yu-image-search-mcp-server",
-      version: "0.0.1",
+    const server = new McpServer(
+      {
+        name: "yu-image-search-mcp-server",
+        version: "0.0.1",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    // 注册工具列表
+    server.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      return {
+        tools: [
+          {
+            name: "searchImage",
+            description: "Search for images using Pexels API",
+            inputSchema: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "Search query for images",
+                },
+              },
+              required: ["query"],
+            },
+          },
+        ],
+      };
     });
 
-    server.tool(
-      "searchImage",
-      "Search for images using Pexels API",
-      {
-        query: z.string().describe("Search query for images"),
-      },
-      async ({ query }) => {
+    // 注册工具调用处理器
+    server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+
+      if (name === "searchImage") {
+        const query = (args as { query: string }).query;
         const result = await this.imageSearchTool.searchImage(query);
         return {
           content: [
@@ -62,8 +93,10 @@ export class SseServer {
             },
           ],
         };
-      },
-    );
+      }
+
+      throw new Error(`Unknown tool: ${name}`);
+    });
 
     return server;
   }

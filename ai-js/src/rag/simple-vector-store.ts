@@ -1,7 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Document, SearchResult, VectorStore } from './vector-store.interface';
+import { Document, SearchResult, VectorStore, SearchOptions } from './vector-store.interface';
 import { EmbeddingModel } from './embedding-model.interface';
+import { FilterExpressionEvaluator } from './filter-expression';
 
 /**
  * 简单的内存向量存储实现
@@ -9,6 +10,7 @@ import { EmbeddingModel } from './embedding-model.interface';
 export class SimpleVectorStore implements VectorStore {
   private readonly logger = new Logger(SimpleVectorStore.name);
   private documents: Map<string, Document> = new Map();
+  private readonly filterEvaluator = new FilterExpressionEvaluator();
 
   constructor(private embeddingModel: EmbeddingModel) {}
 
@@ -22,14 +24,32 @@ export class SimpleVectorStore implements VectorStore {
   }
 
   async search(query: string, topK: number = 5): Promise<SearchResult[]> {
+    return this.searchWithOptions(query, { topK });
+  }
+
+  async searchWithOptions(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
+    const { topK = 5, filterExpression, similarityThreshold = 0 } = options;
+
     const queryEmbedding = await this.embeddingModel.embed(query);
 
     const results: SearchResult[] = [];
 
     for (const doc of this.documents.values()) {
+      // 应用元数据过滤
+      if (filterExpression && doc.metadata) {
+        const matches = this.filterEvaluator.evaluate(filterExpression, doc.metadata);
+        if (!matches) {
+          continue;
+        }
+      }
+
       if (doc.embedding) {
         const score = this.cosineSimilarity(queryEmbedding, doc.embedding);
-        results.push({ document: doc, score });
+
+        // 应用相似度阈值
+        if (score >= similarityThreshold) {
+          results.push({ document: doc, score });
+        }
       }
     }
 

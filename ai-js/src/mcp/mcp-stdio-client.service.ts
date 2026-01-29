@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { BaseTool, ToolParameter } from '../tools/tool.interface';
+import { McpConfigLoader } from './mcp-config-loader';
 
 /**
  * MCP Stdio 工具包装器
@@ -98,21 +99,41 @@ export class McpStdioClientService implements OnModuleDestroy {
    * 从环境变量或配置文件加载服务器配置
    */
   private loadServerConfigs(): void {
-    // 从环境变量读取 MCP Stdio 服务器配置
+    const configLoader = new McpConfigLoader();
+
+    // 1. 尝试从配置文件加载
+    const configPath = this.configService.get<string>('MCP_SERVERS_CONFIG');
+    if (configPath) {
+      const fileConfigs = configLoader.loadFromFile(configPath);
+      if (fileConfigs.length > 0) {
+        this.serverConfigs = fileConfigs;
+        this.logger.log(`Loaded ${this.serverConfigs.length} MCP Stdio server configs from file`);
+        return;
+      }
+    }
+
+    // 2. 尝试从默认位置加载配置文件
+    const defaultConfigs = configLoader.loadDefault();
+    if (defaultConfigs.length > 0) {
+      this.serverConfigs = defaultConfigs;
+      this.logger.log(`Loaded ${this.serverConfigs.length} MCP Stdio server configs from default location`);
+      return;
+    }
+
+    // 3. 从环境变量读取 MCP Stdio 服务器配置（兼容旧格式）
     // 格式: MCP_STDIO_SERVERS={"servers":[{"name":"xxx","command":"node","args":["path/to/server.js"]}]}
     const configStr = this.configService.get<string>('MCP_STDIO_SERVERS');
 
     if (configStr) {
-      try {
-        const config = JSON.parse(configStr);
-        if (config.servers && Array.isArray(config.servers)) {
-          this.serverConfigs = config.servers;
-          this.logger.log(`Loaded ${this.serverConfigs.length} MCP Stdio server configs`);
-        }
-      } catch (error) {
-        this.logger.error('Failed to parse MCP_STDIO_SERVERS config', error);
+      const envConfigs = configLoader.loadFromEnv(configStr);
+      if (envConfigs.length > 0) {
+        this.serverConfigs = envConfigs;
+        this.logger.log(`Loaded ${this.serverConfigs.length} MCP Stdio server configs from env`);
+        return;
       }
     }
+
+    this.logger.warn('No MCP Stdio server configs found');
   }
 
   /**
