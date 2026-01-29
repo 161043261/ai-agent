@@ -150,10 +150,7 @@ export class LoveAppRagAdvisorFactory {
    * @param vectorStore 向量存储
    * @param categories 允许的分类列表
    */
-  static createWithCategories(
-    vectorStore: VectorStore,
-    categories: string[],
-  ): DocumentRetriever {
+  static createWithCategories(vectorStore: VectorStore, categories: string[]): DocumentRetriever {
     const filterBuilder = new FilterExpressionBuilder();
     const filterExpression = filterBuilder.in('category', categories);
 

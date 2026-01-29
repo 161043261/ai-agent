@@ -116,7 +116,9 @@ export class McpStdioClientService implements OnModuleDestroy {
     const defaultConfigs = configLoader.loadDefault();
     if (defaultConfigs.length > 0) {
       this.serverConfigs = defaultConfigs;
-      this.logger.log(`Loaded ${this.serverConfigs.length} MCP Stdio server configs from default location`);
+      this.logger.log(
+        `Loaded ${this.serverConfigs.length} MCP Stdio server configs from default location`,
+      );
       return;
     }
 

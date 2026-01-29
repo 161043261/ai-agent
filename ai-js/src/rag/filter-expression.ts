@@ -285,10 +285,7 @@ export class FilterExpressionEvaluator {
     return fieldValue.endsWith(expression.value);
   }
 
-  private evaluateExists(
-    expression: FilterExpression,
-    metadata: Record<string, unknown>,
-  ): boolean {
+  private evaluateExists(expression: FilterExpression, metadata: Record<string, unknown>): boolean {
     const exists = expression.field! in metadata;
     return expression.value === true ? exists : !exists;
   }

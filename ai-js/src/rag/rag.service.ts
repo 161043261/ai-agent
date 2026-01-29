@@ -68,9 +68,14 @@ export class RagService implements OnModuleInit {
       enableQueryRewrite: this.configService.get<boolean>('RAG_ENABLE_QUERY_REWRITE', true),
       enableMultiQuery: this.configService.get<boolean>('RAG_ENABLE_MULTI_QUERY', false),
       multiQueryCount: this.configService.get<number>('RAG_MULTI_QUERY_COUNT', 3),
-      enableContextualAugment: this.configService.get<boolean>('RAG_ENABLE_CONTEXTUAL_AUGMENT', true),
+      enableContextualAugment: this.configService.get<boolean>(
+        'RAG_ENABLE_CONTEXTUAL_AUGMENT',
+        true,
+      ),
       enableKeywordEnrich: this.configService.get<boolean>('RAG_ENABLE_KEYWORD_ENRICH', false),
-      splitMode: (this.configService.get<string>('RAG_SPLIT_MODE', 'recursive') as SplitMode) || SplitMode.RECURSIVE,
+      splitMode:
+        (this.configService.get<string>('RAG_SPLIT_MODE', 'recursive') as SplitMode) ||
+        SplitMode.RECURSIVE,
       chunkSize: this.configService.get<number>('RAG_CHUNK_SIZE', 500),
       chunkOverlap: this.configService.get<number>('RAG_CHUNK_OVERLAP', 50),
     };
@@ -218,7 +223,10 @@ export class RagService implements OnModuleInit {
 
     // 3. 多查询扩展
     if (this.multiQueryExpander) {
-      const expandedQueries = await this.multiQueryExpander.expand(searchQuery, this.config.multiQueryCount);
+      const expandedQueries = await this.multiQueryExpander.expand(
+        searchQuery,
+        this.config.multiQueryCount,
+      );
       this.logger.log(`Query expanded to ${expandedQueries.length} queries`);
 
       // 对每个查询执行搜索

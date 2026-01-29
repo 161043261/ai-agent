@@ -68,7 +68,11 @@ export class McpConfigLoader {
    * 从默认位置加载配置
    */
   loadDefault(): McpStdioServerConfig[] {
-    const defaultPaths = ['resources/mcp-servers.json', 'mcp-servers.json', 'config/mcp-servers.json'];
+    const defaultPaths = [
+      'resources/mcp-servers.json',
+      'mcp-servers.json',
+      'config/mcp-servers.json',
+    ];
 
     for (const configPath of defaultPaths) {
       const fullPath = path.join(process.cwd(), configPath);
