@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.github.tianchenghang.agent.model.AgentState;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +16,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
-
-import java.util.stream.Collectors;
 
 // Base agent class for handling tool calls, implementing the think and act methods, and can be used
 // as a parent class for creating instances.
@@ -34,7 +33,8 @@ public class ToolCallAgent extends ReActAgent {
   // Tool calling manager
   private final ToolCallingManager toolCallingManager;
 
-  // Disable Spring AI's built-in tool calling mechanism and maintain options and message context manually
+  // Disable Spring AI's built-in tool calling mechanism and maintain options and message context
+  // manually
   private final ChatOptions chatOptions;
 
   public ToolCallAgent(ToolCallback[] availableTools) {
@@ -42,9 +42,10 @@ public class ToolCallAgent extends ReActAgent {
     this.availableTools = availableTools;
     this.toolCallingManager = ToolCallingManager.builder().build();
 
-    // Disable Spring AI's built-in tool calling mechanism and maintain options and message context manually
+    // Disable Spring AI's built-in tool calling mechanism and maintain options and message context
+    // manually
     this.chatOptions =
-      DashScopeChatOptions.builder().withInternalToolExecutionEnabled(false).build();
+        DashScopeChatOptions.builder().withInternalToolExecutionEnabled(false).build();
   }
 
   // Processes the current state and decides the next action
@@ -60,12 +61,12 @@ public class ToolCallAgent extends ReActAgent {
     var prompt = new Prompt(messageList, this.chatOptions);
     try {
       var chatResponse =
-        getChatClient()
-          .prompt(prompt)
-          .system(getSystemPrompt())
-          .tools(availableTools)
-          .call()
-          .chatResponse();
+          getChatClient()
+              .prompt(prompt)
+              .system(getSystemPrompt())
+              .tools(availableTools)
+              .call()
+              .chatResponse();
       // Record the response for later use in Act
       this.toolCallChatResponse = chatResponse;
       var assistantMessage = chatResponse.getResult().getOutput();
@@ -84,12 +85,12 @@ public class ToolCallAgent extends ReActAgent {
       }
 
       var toolCallInfo =
-        toolCallList.stream()
-          .map(
-            toolCall ->
-              String.format(
-                "Tool name: %s, arguments: %s", toolCall.name(), toolCall.arguments()))
-          .collect(Collectors.joining("\n"));
+          toolCallList.stream()
+              .map(
+                  toolCall ->
+                      String.format(
+                          "Tool name: %s, arguments: %s", toolCall.name(), toolCall.arguments()))
+              .collect(Collectors.joining("\n"));
       log.info("Tool call information: {}", toolCallInfo);
       // Send tool call information to SSE
       for (var toolCall : toolCallList) {
@@ -100,8 +101,7 @@ public class ToolCallAgent extends ReActAgent {
       return true;
     } catch (Exception e) {
       log.error(getName() + " process error: " + e.getMessage());
-      getMessageList()
-        .add(new AssistantMessage(getName() + " process error: " + e.getMessage()));
+      getMessageList().add(new AssistantMessage(getName() + " process error: " + e.getMessage()));
       return false;
     }
   }
@@ -116,11 +116,11 @@ public class ToolCallAgent extends ReActAgent {
     var toolExecutionResult = toolCallingManager.executeToolCalls(prompt, toolCallChatResponse);
     setMessageList(toolExecutionResult.conversationHistory());
     var toolResponseMessage =
-      (ToolResponseMessage) CollUtil.getLast(toolExecutionResult.conversationHistory());
+        (ToolResponseMessage) CollUtil.getLast(toolExecutionResult.conversationHistory());
     // Check if a terminate tool was called
     var terminateToolCalled =
-      toolResponseMessage.getResponses().stream()
-        .anyMatch(response -> response.name().equals("doTerminate"));
+        toolResponseMessage.getResponses().stream()
+            .anyMatch(response -> response.name().equals("doTerminate"));
     if (terminateToolCalled) {
       // Task completed, update state
       setState(AgentState.FINISHED);
@@ -130,11 +130,11 @@ public class ToolCallAgent extends ReActAgent {
       emitToolResult(response.name(), response.responseData());
     }
     var results =
-      toolResponseMessage.getResponses().stream()
-        .map(
-          response ->
-            "Tool " + response.name() + " returned result: " + response.responseData())
-        .collect(Collectors.joining("\n"));
+        toolResponseMessage.getResponses().stream()
+            .map(
+                response ->
+                    "Tool " + response.name() + " returned result: " + response.responseData())
+            .collect(Collectors.joining("\n"));
     log.info(results);
     return results;
   }
