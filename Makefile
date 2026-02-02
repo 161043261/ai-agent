@@ -4,58 +4,49 @@
 chore: ## Regular code maintenance
 	git add -A
 	git commit -m "chore: Regular code maintenance"
-	git push origin main
+	git push origin dev
 
 .PHONY: feat
 feat: ## Introduce new features
 	git add -A
 	git commit -m "feat: Introduce new features" --no-verify
-	git push origin main
+	git push origin dev
 
 .PHONY: fix
 fix: ## Fix some bugs
 	git add -A
 	git commit -m "fix: Fix some bugs"
-	git push origin main
+	git push origin dev
 
 .PHONY: style
 style: ## Update styling
 	git add -A
 	git commit -m "style: Update styling"
-	git push origin main
+	git push origin dev
 
 .PHONY: refactor
 refactor: ## Refactor code
 	git add -A
 	git commit -m "refactor: Refactor code"
-	git push origin main
+	git push origin dev
 
 .PHONY: test
 test: ## Create/Update testing
 	git add -A
 	git commit -m "test: Create/Update testing"
-	git push origin main
+	git push origin dev
 
 .PHONY: docs
 docs: ## Create/Update documentation
 	git add -A
 	git commit -m "docs: Create/Update docs"
-	git push origin main
+	git push origin dev
 
 .PHONY: perf
 perf: ## Performance optimization
 	git add -A
 	git commit -m "perf: Performance optimization"
-	git push origin main
-
-.PHONY: init
-init: ## Initial commit
-	rm -rf ./.git
-	git init
-	git remote add origin git@github.com:161043261/ai-agent.git
-	git add -A
-	git commit -m "Initial commit"
-	git push -f origin main --set-upstream
+	git push origin dev
 
 .PHONY: help
 help:

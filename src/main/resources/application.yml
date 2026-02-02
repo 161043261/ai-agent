@@ -1,17 +1,16 @@
 spring:
   application:
-    name: yu-ai-agent
+    name: ai-agent
   profiles:
     active: local
-  # 临时注释掉, 便于大家开发调试和部署 (实际填写 PgVector 数据库信息)
+  # PgVector
   #  datasource:
   #    url: xxx
   #    username: root
-  #    password: 123456
+  #    password: pass
   ai:
     dashscope:
-      # 需要替换为你自己的 key
-      api-key: your-api-key
+      api-key: https://bailian.console.aliyun.com/cn-beijing/?tab=model#/api-key
       chat:
         options:
           model: qwen-plus
@@ -19,16 +18,15 @@ spring:
       base-url: http://localhost:11434
       chat:
         model: gemma3:1b
-# 临时注释掉, 便于大家开发调试和部署 (实际需要启动 MCP 服务)
-      mcp:
-        client:
-          sse:
-            connections:
-              server1:
-                url: http://localhost:8127
-          stdio:
-            servers-configuration: classpath:mcp-servers.json
-# 临时注释掉, 便于大家开发调试和部署 (实际需要启动 PgVector 数据库)
+    # mcp:
+    #   client:
+    #     sse:
+    #       connections:
+    #         server1:
+    #           url: http://localhost:8124
+    #     stdio:
+    #       servers-configuration: classpath:mcp-servers.json
+# PgVector
 #    vectorstore:
 #      pgvector:
 #        index-type: HNSW
@@ -39,28 +37,23 @@ server:
   port: 8123
   servlet:
     context-path: /api
-# springdoc-openapi config
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
   api-docs:
-    path: /v3/api-docs
+    path: /v1/api-docs
   group-configs:
     - group: "default"
       paths-to-match: "/**"
-      packages-to-scan: com.yupi.yuaiagent.controller
-# knife4j config
+      packages-to-scan: com.github.tianchenghang.controller
 knife4j:
   enable: true
   setting:
     language: zh_cn
-# searchAPI
 search-api:
-  # 需要替换为你自己的 key
-  api-key: jLLJBADy3y5RYygf7zC7hCG8
-# 修改日志级别, 查看 Spring AI 更多调用细节
+  api-key: <Your Search API Key>
 logging:
   level:
     org.springframework.ai: DEBUG
