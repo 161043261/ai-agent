@@ -40,12 +40,12 @@ public abstract class ReActAgent extends BaseAgent {
     try {
       var shouldAct = think();
       if (!shouldAct) {
-        return "Thinking complete - no action required.";
+        return "Thinking complete, no action required";
       }
       return act();
     } catch (Exception e) {
       e.printStackTrace();
-      return "Step execute failed:" + e.getMessage();
+      return "Step execute failed: " + e.getMessage();
     }
   }
 }

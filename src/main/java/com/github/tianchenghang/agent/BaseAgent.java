@@ -117,7 +117,7 @@ public abstract class BaseAgent {
           }
           this.state = AgentState.RUNNING;
           messageList.add(new UserMessage(userPrompt));
-          var results = new ArrayList<String>();
+          // var results = new ArrayList<String>();
           try {
             for (var i = 0; i < maxSteps && state != AgentState.FINISHED; i++) {
               var stepNumber = i + 1;
@@ -128,8 +128,8 @@ public abstract class BaseAgent {
               stepStartData.put("max_steps", maxSteps);
               sendSseMessage(EventNames.STEP_START, stepStartData);
               var stepResult = step();
-              var result = "Step " + stepNumber + ": " + stepResult;
-              results.add(result);
+              // var result = "Step " + stepNumber + ": " + stepResult;
+              // results.add(result);
               var stepResultData = new HashMap<String, Object>();
               stepResultData.put("step", stepNumber);
               stepResultData.put("content", stepResult);
@@ -137,7 +137,7 @@ public abstract class BaseAgent {
             }
             if (currentStep >= maxSteps) {
               state = AgentState.FINISHED;
-              results.add("Terminated, reached max steps (" + maxSteps + ")");
+              // results.add("Terminated, reached max steps (" + maxSteps + ")");
               sendSseMessage(
                   EventNames.FINISHED, "Terminated, reached max steps (" + maxSteps + ")");
             }
@@ -148,8 +148,8 @@ public abstract class BaseAgent {
             try {
               sendSseMessage(EventNames.ERROR, "Executing agent error: " + e.getMessage());
               emitter.complete();
-            } catch (Exception ex) {
-              emitter.completeWithError(ex);
+            } catch (Exception e2) {
+              emitter.completeWithError(e2);
             }
           } finally {
             this.sseEmitter = null;

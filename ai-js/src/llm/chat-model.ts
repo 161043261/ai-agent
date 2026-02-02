@@ -10,7 +10,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   content: string;
-  toolCalls?: ToolCall[];
+  toolCallList?: ToolCall[];
 }
 
 export interface ChatModel {

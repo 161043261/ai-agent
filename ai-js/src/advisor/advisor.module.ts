@@ -1,4 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import {
+  AdvisorChain,
+  LoggerAdvisor,
+  ReReadingAdvisor,
+} from './advisors.service';
 
-@Module({})
+@Global()
+@Module({
+  providers: [LoggerAdvisor, ReReadingAdvisor, AdvisorChain],
+  exports: [LoggerAdvisor, ReReadingAdvisor, AdvisorChain],
+})
 export class AdvisorModule {}
