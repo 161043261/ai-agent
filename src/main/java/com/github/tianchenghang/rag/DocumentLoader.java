@@ -45,7 +45,7 @@ public class DocumentLoader {
         allDocuments.addAll(markdownDocumentReader.get());
       }
     } catch (IOException e) {
-      log.error("Failed to load Markdown documents", e);
+      log.error("Load markdown documents error:", e);
     }
     return allDocuments;
   }

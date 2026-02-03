@@ -47,7 +47,7 @@ public abstract class BaseAgent {
         message.putAll(data);
         sseEmitter.send(JSONUtil.toJsonStr(message));
       } catch (IOException e) {
-        log.error("Failed to send SSE message", e);
+        log.error("Send SSE message error:", e);
       }
     }
   }

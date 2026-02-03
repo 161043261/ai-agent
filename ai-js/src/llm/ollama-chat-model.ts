@@ -117,7 +117,7 @@ export class OllamaChatModel extends ChatModel {
       );
       return response.data.models?.map((m: { name: string }) => m.name) || [];
     } catch (err) {
-      this.logger.error('Failed to list ollama models:', err);
+      this.logger.error('List ollama models error:', err);
       return [];
     }
   }
