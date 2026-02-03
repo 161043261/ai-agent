@@ -24,7 +24,7 @@ public class TerminalOperationTool {
       }
       var exitCode = process.waitFor();
       if (exitCode != 0) {
-        output.append("Command execution failed with exit code: ").append(exitCode);
+        output.append("Command execution failed: ").append(exitCode);
       }
     } catch (IOException | InterruptedException e) {
       output.append("Error executing command: ").append(e.getMessage());

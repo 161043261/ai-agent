@@ -1,5 +1,5 @@
 import { Message, ToolCall } from '../agent/model/message';
-import { Tool } from '../tools/tool';
+import { Tool } from '../tools/base-tool';
 import { OpenAiMessage, OpenAiTool, OpenAiToolCall } from './types';
 
 export interface ChatRequest {

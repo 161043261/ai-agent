@@ -30,7 +30,7 @@ export class AdvisedChatModel extends ChatModel {
       return;
     }
 
-    let fullContent = '';
+    const fullContent = '';
     for await (const chunk of this.chatModel.chatStream(advisedRequest)) {
       const advisedChunk = this.advisorChain.applyAfterStream(chunk);
       yield advisedChunk;

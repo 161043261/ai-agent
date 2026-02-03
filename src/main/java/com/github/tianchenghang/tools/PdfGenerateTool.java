@@ -15,10 +15,10 @@ import org.springframework.ai.tool.annotation.ToolParam;
 /** pdf generate tool. */
 public class PdfGenerateTool {
 
-  @Tool(description = "Generate a pdf file with given content", returnDirect = false)
+  @Tool(description = "Generate a pdf file with content", returnDirect = false)
   public String generatePDF(
-      @ToolParam(description = "Name of the file to save the generated pdf") String fileName,
-      @ToolParam(description = "Content to be included in the pdf") String content) {
+      @ToolParam(description = "Generated pdf filename") String fileName,
+      @ToolParam(description = "Content to be written to the pdf") String content) {
     var fileDir = FileConstant.FILE_OUTPUT_DIR + "/pdf";
     var filepath = fileDir + "/" + fileName;
     try {
@@ -39,7 +39,7 @@ public class PdfGenerateTool {
         // Add paragraph and close document
         document.add(paragraph);
       }
-      return "pdf generated successfully to: " + filepath;
+      return "Pdf generated successfully to: " + filepath;
     } catch (IOException e) {
       return "Error generating pdf: " + e.getMessage();
     }

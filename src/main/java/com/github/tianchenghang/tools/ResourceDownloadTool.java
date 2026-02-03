@@ -9,13 +9,13 @@ import org.springframework.ai.tool.annotation.ToolParam;
 
 public class ResourceDownloadTool {
 
-  @Tool(description = "Download a resource from a given URL")
+  @Tool(description = "Download resource from url")
   public String downloadResource(
       @ToolParam(description = "Url of the resource to download") String url,
-      @ToolParam(description = "Name of the file to save the downloaded resource")
-          String fileName) {
+      @ToolParam(description = "Downloaded resource filename")
+          String filename) {
     var fileDir = FileConstant.FILE_OUTPUT_DIR + "/download";
-    var filepath = fileDir + "/" + fileName;
+    var filepath = fileDir + "/" + filename;
     try {
       // Make directory
       FileUtil.mkdir(fileDir);

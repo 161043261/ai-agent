@@ -18,7 +18,7 @@ public class WebSearchTool {
     this.apiKey = apiKey;
   }
 
-  @Tool(description = "Search for information from google search engine")
+  @Tool(description = "Search for information from web search engine")
   public String searchWeb(@ToolParam(description = "Search query keyword") String query) {
     var paramMap = new HashMap<String, Object>();
     paramMap.put("q", query);
@@ -41,7 +41,7 @@ public class WebSearchTool {
               .collect(Collectors.joining(","));
       return result;
     } catch (Exception e) {
-      return "Error searching google: " + e.getMessage();
+      return "Error searching web: " + e.getMessage();
     }
   }
 }

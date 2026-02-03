@@ -12,7 +12,7 @@ export interface Tool {
 }
 
 export interface ToolExecutor {
-  execute(toolName: string, args: string): Promise<string>;
+  execute(toolName: string, args: Record<string, unknown>): Promise<string>;
 }
 
 export abstract class BaseTool implements Tool {

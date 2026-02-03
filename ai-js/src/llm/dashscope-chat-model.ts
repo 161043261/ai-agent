@@ -83,6 +83,7 @@ export class DashscopeChatModel extends ChatModel {
               continue;
             }
             try {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               const resp: OpenAiStreamResponse = JSON.parse(data);
               const choice = resp.choices?.[0];
               if (!choice) {

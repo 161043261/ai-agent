@@ -1,5 +1,6 @@
 import { ChatResponse } from '../llm/chat-model';
-import { Tool, ToolExecutor } from '../tools/tool';
+import { Tool, ToolExecutor } from '../tools/base-tool';
+import { TerminateTool } from '../tools/terminate-tool';
 import { AgentState } from './model/agent-state.enum';
 import {
   createAssistantMessage,
@@ -70,7 +71,7 @@ export class ToolCallAgent extends ReActAgent {
       // automatically recorded during tool calls
       return true;
     } catch (err) {
-      var errMessage = err instanceof Error ? err.message : String(err);
+      const errMessage = err instanceof Error ? err.message : String(err);
       this.logger.error(`${this.name} process error: ${errMessage}`);
       this.messageList.push(
         createAssistantMessage(`${this.name} process error: ${errMessage}`),
@@ -104,7 +105,7 @@ export class ToolCallAgent extends ReActAgent {
         this.emitToolResult(toolCall.name, result);
         results.push(`Tool ${toolCall.name} returned result: ${result}`);
         // Check if a terminate tool was called
-        if (toolCall.name === 'doTerminate') {
+        if (toolCall.name === TerminateTool.name) {
           this.state = AgentState.FINISHED;
         }
       } catch (err) {

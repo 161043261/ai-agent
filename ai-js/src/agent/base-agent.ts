@@ -39,7 +39,7 @@ export abstract class BaseAgent {
         const stepNumber = i + 1;
         this.currentStep = stepNumber;
         this.logger.log(`Executing step ${stepNumber}/${this.maxSteps}`);
-        const stepResult = this.step();
+        const stepResult = await this.step();
         const result = `Step ${stepNumber}: ${stepResult}`;
         results.push(result);
       }
