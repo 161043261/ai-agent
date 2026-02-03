@@ -10,17 +10,17 @@ import org.springframework.context.annotation.Bean;
 
 public class RagCloudAdvisorConfig {
   @Value("${spring.ai.dashscope.api-key}")
-  private String dashScopeApiKey;
+  private String dashscopeApiKey;
 
   @Bean
   public Advisor loveAppRagCloudAdvisor() {
-    var dashScopeApi = DashScopeApi.builder().apiKey(dashScopeApiKey).build();
-    var dashScopeDocumentRetriever =
+    var dashscopeApi = DashScopeApi.builder().apiKey(dashscopeApiKey).build();
+    var dashscopeDocumentRetriever =
         new DashScopeDocumentRetriever(
-            dashScopeApi,
+            dashscopeApi,
             DashScopeDocumentRetrieverOptions.builder().withIndexName("Code Master").build());
     return RetrievalAugmentationAdvisor.builder()
-        .documentRetriever(dashScopeDocumentRetriever)
+        .documentRetriever(dashscopeDocumentRetriever)
         .build();
   }
 }

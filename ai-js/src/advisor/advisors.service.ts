@@ -21,7 +21,9 @@ export class LoggerAdvisor implements Advisor, StreamAdvisor {
   order: number;
 
   before?(request: ChatRequest): ChatRequest {
-    const userMessage = request.messages.find((item) => item.role === 'user');
+    const userMessage = request.messageList.find(
+      (item) => item.role === 'user',
+    );
     if (!userMessage) {
       return request;
     }
@@ -34,14 +36,14 @@ export class LoggerAdvisor implements Advisor, StreamAdvisor {
   }
 
   after?(response: ChatResponse): ChatResponse {
-    const { content, toolCallList: toolCalls } = response;
+    const { content, toolCallList } = response;
     if (!content) {
       return response;
     }
     this.logger.log(`AI response: ${content}`);
-    if (toolCalls && toolCalls.length > 0) {
+    if (toolCallList && toolCallList.length > 0) {
       this.logger.log(
-        `Tool calls: ${toolCalls.map((item) => item.name).join(',')}`,
+        `Tool calls: ${toolCallList.map((item) => item.name).join(',')}`,
       );
     }
     return response;
@@ -60,15 +62,17 @@ export class ReReadingAdvisor implements Advisor {
   order = 1;
 
   before(request: ChatRequest): ChatRequest {
-    const { messages } = request;
-    const userMessageIdx = messages.findIndex((item) => item.role === 'user');
+    const { messageList } = request;
+    const userMessageIdx = messageList.findIndex(
+      (item) => item.role === 'user',
+    );
     if (userMessageIdx === -1) {
       return request;
     }
-    const userText = messages[userMessageIdx].content;
+    const userText = messageList[userMessageIdx].content;
     const newUserText = `${userText}\nRead the question again: ${userText}`;
-    messages[userMessageIdx] = {
-      ...messages[userMessageIdx],
+    messageList[userMessageIdx] = {
+      ...messageList[userMessageIdx],
       content: newUserText,
     };
     this.logger.debug(`Re2 enhanced prompt: ${newUserText}`);
@@ -78,7 +82,7 @@ export class ReReadingAdvisor implements Advisor {
 
 @Injectable()
 export class AdvisorChain {
-  private readonly logger = new Logger(AdvisorChain.name);
+  // private readonly logger = new Logger(AdvisorChain.name);
   private advisors: Advisor[] = [];
   private streamAdvisors: StreamAdvisor[] = [];
 

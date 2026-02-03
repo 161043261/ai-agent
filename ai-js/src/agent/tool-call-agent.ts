@@ -36,9 +36,9 @@ export class ToolCallAgent extends ReActAgent {
       }
       // Call the AI model to get the tool call results
       const response = await this.chatModel.chat({
-        messages: this.messageList,
+        messageList: this.messageList,
         systemPrompt: this.systemPrompt,
-        tools: this.availableTools,
+        toolList: this.availableTools,
       });
       // Record the response for later use in Act
       this.toolCallResponse = response;

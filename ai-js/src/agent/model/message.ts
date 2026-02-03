@@ -15,9 +15,9 @@ export interface ToolResponse {
 export interface Message {
   role: MessageRole;
   content: string;
-  toolCalls?: ToolCall[];
-  toolCallId?: string;
   name?: string;
+  toolCallId?: string;
+  toolCallList?: ToolCall[];
 }
 
 export function createSystemMessage(content: string): Message {
@@ -30,9 +30,9 @@ export function createUserMessage(content: string): Message {
 
 export function createAssistantMessage(
   content: string,
-  toolCalls?: ToolCall[],
+  toolCallList?: ToolCall[],
 ): Message {
-  return { role: 'assistant', content, toolCalls };
+  return { role: 'assistant', content, toolCallList };
 }
 
 export function createToolMessage(

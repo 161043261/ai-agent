@@ -53,7 +53,7 @@ knife4j:
   setting:
     language: zh_cn
 search-api:
-  api-key: <Your Search API Key>
+  api-key: https://www.searchapi.io/
 logging:
   level:
     org.springframework.ai: DEBUG

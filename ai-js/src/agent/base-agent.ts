@@ -20,7 +20,7 @@ export abstract class BaseAgent {
   chatModel: ChatModel | null = null;
   messageList: Message[] = [];
 
-  protected get notFinished() {
+  protected get isNotFinished() {
     return this.state !== AgentState.FINISHED;
   }
 
@@ -35,7 +35,7 @@ export abstract class BaseAgent {
     this.messageList.push(createUserMessage(userPrompt));
     const results: string[] = [];
     try {
-      for (let i = 0; i < this.maxSteps && this.notFinished; i++) {
+      for (let i = 0; i < this.maxSteps && this.isNotFinished; i++) {
         const stepNumber = i + 1;
         this.currentStep = stepNumber;
         this.logger.log(`Executing step ${stepNumber}/${this.maxSteps}`);
@@ -87,7 +87,7 @@ export abstract class BaseAgent {
       this.state = AgentState.RUNNING;
       this.messageList.push(createUserMessage(userPrompt));
       try {
-        for (let i = 0; i < this.maxSteps && this.notFinished; i++) {
+        for (let i = 0; i < this.maxSteps && this.isNotFinished; i++) {
           const stepNumber = i + 1;
           this.currentStep = stepNumber;
           this.logger.log(`Executing step ${stepNumber}/${this.maxSteps}`);
