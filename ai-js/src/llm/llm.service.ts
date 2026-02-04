@@ -62,11 +62,15 @@ export class LlmService {
     return this.chatModel;
   }
 
+  getProvider() {
+    return this.llmProvider;
+  }
+
   setAdvisorChain(advisorChain: AdvisorChain) {
     this.advisorChain = advisorChain;
   }
 
-  async isOllamaAvaliable() {
+  async isOllamaAvailable() {
     if (this.llmProvider === 'dashscope') {
       const baseUrl = this.configService.get<string>(
         'OLLAMA_BASE_URL',

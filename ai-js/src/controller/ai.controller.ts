@@ -117,8 +117,7 @@ export class AiController {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    const allTools = this.toolCallbackProvider.getToolCallbacks();
-    this.agentService.runManusStream(message, allTools).subscribe({
+    this.agentService.runCodeManusStream(message).subscribe({
       next: (chunk) => {
         res.write(`data: ${chunk}\n\n`);
       },
@@ -133,5 +132,12 @@ export class AiController {
         res.end();
       },
     });
+  }
+
+  @Get('manus/chat/sync')
+  async doChatWithManusSync(
+    @Query('message') message: string,
+  ): Promise<string> {
+    return this.agentService.runCodeManus(message);
   }
 }

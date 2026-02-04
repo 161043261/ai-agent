@@ -29,38 +29,19 @@ export class AgentService {
     private readonly ragService: RagService,
   ) {}
 
-  createCodeManus(
-    additionalTools: StructuredTool[] = [],
-    ragContext = '',
-  ): CodeManus {
-    const localTools = this.toolsService.getAllTools();
-    const allTools = [...localTools, ...additionalTools];
-
+  createCodeManus(ragContext = ''): CodeManus {
+    const allTools = this.toolsService.getAllTools();
     const combinedExecutor: ToolExecutor = {
       execute: async (
         toolName: string,
         args: Record<string, unknown>,
       ): Promise<string> => {
-        let tool = additionalTools.find((item) => item.name === toolName);
-        const aggregateError: string[] = [];
+        const tool = allTools.find((item) => item.name === toolName);
         if (tool) {
           const [ok, err, result] = await callTool(tool, args);
-          if (ok) {
-            return result;
-          }
-          aggregateError.push(err);
+          return ok ? result : `Executing tool error: ${err}`;
         }
-        tool = localTools.find((item) => item.name === toolName);
-        if (tool) {
-          const [ok, err, result] = await callTool(tool, args);
-          if (ok) {
-            return result;
-          }
-          aggregateError.push(err);
-        }
-        return aggregateError.length
-          ? `Executing tool error: ${aggregateError.join(',')}`
-          : `Tool ${toolName} not found`;
+        return `Tool ${toolName} not found`;
       },
     };
     return new CodeManus(
@@ -71,24 +52,18 @@ export class AgentService {
     );
   }
 
-  async runCodeManus(
-    message: string,
-    additionalTools: StructuredTool[] = [],
-  ): Promise<string> {
+  async runCodeManus(message: string): Promise<string> {
     const ragContext = await this.ragService.retrieveAsContext(message);
-    const codeManus = this.createCodeManus(additionalTools, ragContext);
+    const codeManus = this.createCodeManus(ragContext);
     return codeManus.run(message);
   }
 
-  runCodeManusStream(
-    message: string,
-    additionalTools: StructuredTool[] = [],
-  ): Observable<string> {
+  runCodeManusStream(message: string): Observable<string> {
     return new Observable((subscriber) => {
       this.ragService
         .retrieveAsContext(message)
         .then((ragContext) => {
-          const codeManus = this.createCodeManus(additionalTools, ragContext);
+          const codeManus = this.createCodeManus(ragContext);
           codeManus.runStream(message).subscribe({
             next: (value) => subscriber.next(value),
             error: (err) => subscriber.error(err),
