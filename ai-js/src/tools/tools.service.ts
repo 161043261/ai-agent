@@ -17,18 +17,22 @@ export class ToolsService implements ToolExecutor {
     this.registerTools();
   }
 
-  async execute(toolName: string, argsJson: string): Promise<string> {
+  async execute(
+    toolName: string,
+    args: Record<string, unknown>,
+  ): Promise<string> {
     const tool = this.getTool(toolName);
     if (!tool) {
       return `Unknown tool: ${toolName}`;
     }
     try {
-      this.logger.log(`Executing tool ${toolName} with args: ${argsJson}`);
-      const args = JSON.parse(argsJson) as Record<string, unknown>;
+      this.logger.log(
+        `Executing tool ${toolName} with args: ${JSON.stringify(args)}`,
+      );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await tool.invoke(args);
       this.logger.log(`Tool ${toolName} execution result: ${result}`);
-      return typeof result === 'string' ? result : JSON.stringify(result);
+      return JSON.stringify(result);
     } catch (err) {
       this.logger.error(`Error executing tool ${toolName}, error:`, err);
       return `Error executing tool ${toolName}`;

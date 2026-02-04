@@ -28,10 +28,7 @@ export class LoggerAdvisor implements Advisor, StreamAdvisor {
     if (!userMessage) {
       return request;
     }
-    const content =
-      typeof userMessage.content === 'string'
-        ? userMessage.content
-        : JSON.stringify(userMessage.content);
+    const content = JSON.stringify(userMessage.content);
     if (!content) {
       return request;
     }
@@ -74,10 +71,7 @@ export class ReReadingAdvisor implements Advisor {
       return request;
     }
     const userMessage = messages[userMessageIdx];
-    const userText =
-      typeof userMessage.content === 'string'
-        ? userMessage.content
-        : JSON.stringify(userMessage.content);
+    const userText = JSON.stringify(userMessage.content);
     const newUserText = `${userText}\nRead the question again: ${userText}`;
     messages[userMessageIdx] = new HumanMessage(newUserText);
     this.logger.debug(`Re2 enhanced prompt: ${newUserText}`);

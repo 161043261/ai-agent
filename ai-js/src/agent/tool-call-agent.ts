@@ -5,11 +5,11 @@ import { ToolExecutor } from '../tools/types';
 import { TerminateTool } from '../tools/terminate-tool';
 import { AgentState } from './model/agent-state.enum';
 import { ReActAgent } from './re-act-agent';
-import { Tool } from '@langchain/core/tools';
+import { StructuredTool } from '@langchain/core/tools';
 
 export class ToolCallAgent extends ReActAgent {
   // Available tools
-  protected availableTools: Tool[] = [];
+  protected availableTools: StructuredTool[] = [];
 
   // Stores the response result of tool calls
   protected toolCallResponse: ChatResponse | null = null;
@@ -17,7 +17,7 @@ export class ToolCallAgent extends ReActAgent {
   // Tool executor
   protected toolExecutor: ToolExecutor;
 
-  constructor(tools: Tool[], toolExecutor: ToolExecutor) {
+  constructor(tools: StructuredTool[], toolExecutor: ToolExecutor) {
     super();
     this.availableTools = tools;
     this.toolExecutor = toolExecutor;
@@ -95,7 +95,7 @@ export class ToolCallAgent extends ReActAgent {
       try {
         const content = await this.toolExecutor.execute(
           toolCall.name,
-          JSON.stringify(toolCall.args),
+          toolCall.args,
         );
         this.messages.push(
           new ToolMessage({

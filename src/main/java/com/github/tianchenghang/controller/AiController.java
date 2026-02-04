@@ -31,8 +31,8 @@ public class AiController {
     return codeApp.doChat(message, chatId);
   }
 
-  @GetMapping(value = "/code-app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public Flux<String> doChatWithCodeAppSSE(
+  @GetMapping(value = "/code-app/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public Flux<String> doChatWithCodeAppStream(
       @RequestParam("message") String message, @RequestParam("chat_id") String chatId) {
     return codeApp.doChatByStream(message, chatId);
   }

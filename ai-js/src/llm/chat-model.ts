@@ -4,13 +4,12 @@ import {
   AIMessage,
 } from '@langchain/core/messages';
 import { ToolCall } from '@langchain/core/messages/tool';
-import { Tool } from '@langchain/core/tools';
+import { StructuredTool } from '@langchain/core/tools';
 
 export interface ChatRequest {
   messages: BaseMessage[];
   systemPrompt?: string;
-  tools?: Tool[];
-  stream?: boolean;
+  tools?: StructuredTool[];
 }
 
 export interface ChatResponse {

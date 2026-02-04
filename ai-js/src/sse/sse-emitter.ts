@@ -93,7 +93,7 @@ export class SseEmitter extends EventEmitter {
     try {
       const message =
         (eventName ? `event: ${eventName}\ndata` : '') +
-        `: ${typeof data === 'string' ? data : JSON.stringify(data)}\n\n`; // comment line
+        `: ${JSON.stringify(data)}\n\n`; // comment line
       this.response.write(message);
     } catch (err) {
       this.logger.error('Writing to response error:', err);
@@ -129,7 +129,7 @@ export class SseEmitter extends EventEmitter {
     }
   }
 
-  private onError(err: unknown) {
+  public onError(err: unknown) {
     if (
       this.state === SseEmitterState.COMPLETED ||
       this.state === SseEmitterState.ERROR

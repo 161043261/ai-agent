@@ -1,6 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { EmbeddingModel } from './types';
+
+interface EmbeddingModel {
+  embed(text: string): Promise<number[]>;
+  embedBatch(texts: string[]): Promise<number[][]>;
+}
 
 const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 

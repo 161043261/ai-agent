@@ -58,10 +58,7 @@ export class OllamaChatModel extends ChatModel {
       const stream = await this.client.stream(finalMessages);
 
       for await (const chunk of stream) {
-        const content =
-          typeof chunk.content === 'string'
-            ? chunk.content
-            : JSON.stringify(chunk.content);
+        const content = JSON.stringify(chunk.content);
         if (content) {
           yield content;
         }

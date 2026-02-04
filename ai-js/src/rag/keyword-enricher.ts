@@ -45,10 +45,7 @@ export class KeywordEnricher {
         `Please extract keywords from the following text: \n\n${content}`,
       ),
     ]);
-    const responseText =
-      typeof response.content === 'string'
-        ? response.content
-        : JSON.stringify(response.content);
+    const responseText = typeof JSON.stringify(response.content);
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const parsed = JSON.parse(responseText.trim());

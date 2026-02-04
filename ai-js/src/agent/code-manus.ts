@@ -1,4 +1,4 @@
-import { Tool } from '@langchain/core/tools';
+import { StructuredTool } from '@langchain/core/tools';
 import { ChatModel } from '../llm/chat-model';
 import { ToolExecutor } from '../tools/types';
 import { ToolCallAgent } from './tool-call-agent';
@@ -17,7 +17,7 @@ const NEXT_STEP_PROMPT = `
 
 export class CodeManus extends ToolCallAgent {
   constructor(
-    tools: Tool[],
+    tools: StructuredTool[],
     toolExecutor: ToolExecutor,
     chatModel: ChatModel,
     ragContext?: string,

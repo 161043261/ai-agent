@@ -5,6 +5,7 @@ import { RagService } from './rag/rag.service';
 import { ToolsService } from './tools/tools.service';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import { Observable, Subject } from 'rxjs';
+import { z } from 'zod';
 
 const SYSTEM_PROMPT = `
   You are a programming expert, and your name is [MoWan];
@@ -15,10 +16,12 @@ const SYSTEM_PROMPT = `
   Use chinese.
 `;
 
-export interface CodeReport {
-  title: string;
-  suggestionList: string[];
-}
+const CodeReportSchema = z.object({
+  title: z.string(),
+  suggestions: z.array(z.string()),
+});
+
+type CodeReport = z.infer<typeof CodeReportSchema>;
 
 @Injectable()
 export class AppService {
@@ -39,12 +42,9 @@ export class AppService {
       messages,
       systemPrompt: SYSTEM_PROMPT,
     });
-    const aiMessage = new AIMessage({
-      content: response.content,
-      tool_calls: response.toolCalls,
-    });
+    const aiMessage = new AIMessage(response.content);
     await this.memoryService.add(chatId, [userMessage, aiMessage]);
-    this.logger.log('AI response content:', response.content);
+    this.logger.log('Chat response content:', response.content);
     return response.content;
   }
 
@@ -74,10 +74,7 @@ export class AppService {
             messages,
             systemPrompt: SYSTEM_PROMPT,
           });
-          const aiMessage = new AIMessage({
-            content: response.content,
-            tool_calls: response.toolCalls,
-          });
+          const aiMessage = new AIMessage(response.content);
           await this.memoryService.add(chatId, [userMessage, aiMessage]);
           subject.next(response.content);
         }
@@ -90,5 +87,83 @@ export class AppService {
     });
 
     return subject.asObservable();
+  }
+
+  async doChatWithReport(message: string, chatId: string): Promise<CodeReport> {
+    const reportPrompt =
+      SYSTEM_PROMPT +
+      `\nGenerate a code report after each conversation, titled as {username} code report, with content as a list of suggestions. Please output the result in JSON format: {"title": "", "suggestions": ["suggestion 1", "suggestion 2"]}`;
+    const history = await this.memoryService.get(chatId);
+    const userMessage = new HumanMessage(message);
+    const messages = [...history, userMessage];
+    const response = await this.llmService.getChatModel().chat({
+      messages,
+      systemPrompt: reportPrompt,
+    });
+    const aiMessage = new AIMessage(response.content);
+    await this.memoryService.add(chatId, [userMessage, aiMessage]);
+    const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch && jsonMatch.length) {
+      const { success, data, error } = CodeReportSchema.safeParse(
+        JSON.parse(jsonMatch[0]),
+      );
+      if (success) {
+        this.logger.log(`Code report: ${JSON.stringify(data)}`);
+        return data;
+      }
+      this.logger.warn(`Code report validation failed:`, error.message);
+    }
+    return {
+      title: 'Code report',
+      suggestions: [response.content],
+    };
+  }
+
+  async doChatWithRag(message: string, chatId: string): Promise<string> {
+    const ragContext = await this.ragService.retrieveAsContext(message);
+    const history = await this.memoryService.get(chatId);
+    const enhancedPrompt = ragContext
+      ? `${SYSTEM_PROMPT}\n\n${ragContext}`
+      : SYSTEM_PROMPT;
+    const userMessage = new HumanMessage(message);
+    const messages = [...history, userMessage];
+    const response = await this.llmService.getChatModel().chat({
+      messages,
+      systemPrompt: enhancedPrompt,
+    });
+    const aiMessage = new AIMessage(response.content);
+    await this.memoryService.add(chatId, [userMessage, aiMessage]);
+    this.logger.log('Chat with RAG response content:', response.content);
+    return response.content;
+  }
+
+  async doChatWithTools(message: string, chatId: string): Promise<string> {
+    const history = await this.memoryService.get(chatId);
+    const userMessage = new HumanMessage(message);
+    const messages = [...history, userMessage];
+    const tools = this.toolsService.getAllTools();
+    const response = await this.llmService.getChatModel().chat({
+      messages,
+      systemPrompt: SYSTEM_PROMPT,
+      tools,
+    });
+    const { toolCalls } = response;
+    if (toolCalls && toolCalls.length) {
+      const toolResults: string[] = [];
+      for (const toolCall of toolCalls) {
+        const result = await this.toolsService.execute(
+          toolCall.name,
+          toolCall.args,
+        );
+        toolResults.push(`[${toolCall.name}]: ${result}`);
+      }
+      const finalContent = `${response.content}\n\nTool execution results:\n${toolResults.join('\n')}`;
+      const aiMessage = new AIMessage(finalContent);
+      await this.memoryService.add(chatId, [userMessage, aiMessage]);
+      return finalContent;
+    }
+    const aiMessage = new AIMessage(response.content);
+    await this.memoryService.add(chatId, [userMessage, aiMessage]);
+    return response.content;
   }
 }

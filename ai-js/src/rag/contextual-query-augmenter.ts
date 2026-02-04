@@ -49,9 +49,7 @@ export class ContextualQueryAugmenter {
         new SystemMessage(CONTEXT_AUGMENT_PROMPT),
         new HumanMessage(contextPrompt),
       ]);
-      const augmentedQuery = (
-        typeof content === 'string' ? content : JSON.stringify(content)
-      ).trim();
+      const augmentedQuery = JSON.stringify(content).trim();
       if (augmentedQuery.length > 0) {
         this.logger.log(`Query augmented: "${query}" -> "${augmentedQuery}"`);
         return augmentedQuery;
@@ -66,10 +64,7 @@ export class ContextualQueryAugmenter {
 
   buildContextPrompt(history: BaseMessage[], currentQuery: string) {
     const historyText = history
-      .map(
-        ({ type, content }) =>
-          `${type}: ${typeof content === 'string' ? content : JSON.stringify(content)}`,
-      )
+      .map(({ type, content }) => `${type}: ${JSON.stringify(content)}`)
       .join('\n');
     return `
       conversation history:
