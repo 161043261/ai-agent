@@ -1,6 +1,13 @@
+import {
+  BaseMessage,
+  HumanMessage,
+  SystemMessage,
+  AIMessage,
+  ToolMessage,
+} from '@langchain/core/messages';
+import { z } from 'zod';
 import { Message, ToolCall } from '../agent/model/message';
 import { Tool } from '../tools/types';
-import { OpenAiMessage, OpenAiTool, OpenAiToolCall } from './types';
 
 export interface ChatRequest {
   messageList: Message[];
@@ -14,68 +21,91 @@ export interface ChatResponse {
   toolCallList?: ToolCall[];
 }
 
+export interface LangchainToolDefinition {
+  name: string;
+  description: string;
+  schema: z.ZodObject<z.ZodRawShape>;
+}
+
 export abstract class ChatModel {
   abstract chat(request: ChatRequest): Promise<ChatResponse>;
   abstract chatStream?(request: ChatRequest): AsyncIterable<string>;
 
-  protected buildMessages(
+  protected buildLangchainMessages(
     messageList: Message[],
     systemPrompt?: string,
-  ): OpenAiMessage[] {
-    const result: ReturnType<typeof this.buildMessages> = [];
+  ): BaseMessage[] {
+    const result: BaseMessage[] = [];
+
     if (systemPrompt) {
-      result.push({
-        role: 'system',
-        content: systemPrompt,
-      });
+      result.push(new SystemMessage(systemPrompt));
     }
+
     for (const message of messageList) {
-      const { role, content, toolCallId, name } = message;
-      result.push({
-        role,
-        content,
-        name,
-        ...(role === 'tool' ? { tool_call_id: toolCallId } : {}),
-      });
+      const { role, content, toolCallId } = message;
+
+      switch (role) {
+        case 'system':
+          result.push(new SystemMessage(content));
+          break;
+        case 'user':
+          result.push(new HumanMessage(content));
+          break;
+        case 'assistant':
+          result.push(new AIMessage(content));
+          break;
+        case 'tool':
+          if (toolCallId) {
+            result.push(new ToolMessage({ content, tool_call_id: toolCallId }));
+          }
+          break;
+      }
     }
+
     return result;
   }
 
-  protected buildTools(tools: Tool[]): OpenAiTool[] {
-    return tools.map((item) => {
-      const { name, description, parameters } = item;
+  protected buildLangchainTools(tools: Tool[]): LangchainToolDefinition[] {
+    return tools.map((tool) => {
+      const schemaShape: Record<string, z.ZodTypeAny> = {};
+
+      for (const param of tool.parameters) {
+        let zodType: z.ZodTypeAny;
+        switch (param.type) {
+          case 'number':
+            zodType = z.number().describe(param.description);
+            break;
+          case 'boolean':
+            zodType = z.boolean().describe(param.description);
+            break;
+          case 'array':
+            zodType = z.array(z.any()).describe(param.description);
+            break;
+          case 'object':
+            zodType = z.record(z.string(), z.any()).describe(param.description);
+            break;
+          default:
+            zodType = z.string().describe(param.description);
+        }
+
+        schemaShape[param.name] = param.required ? zodType : zodType.optional();
+      }
+
       return {
-        type: 'function' as const,
-        function: {
-          name,
-          description,
-          parameters: {
-            type: 'object' as const,
-            properties: parameters.reduce((acc, cur) => {
-              const { type, description } = cur;
-              acc[cur.name] = {
-                type,
-                description,
-              };
-              return acc;
-            }, {}),
-            required: parameters
-              .filter((item) => item.required)
-              .map((item) => item.name),
-          },
-        },
+        name: tool.name,
+        description: tool.description,
+        schema: z.object(schemaShape as z.ZodRawShape),
       };
     });
   }
 
-  protected parseToolCalls(toolCalls: OpenAiToolCall[] = []): ToolCall[] {
-    if (toolCalls.length === 0) {
-      return [];
-    }
-    return toolCalls.map((item) => ({
-      id: item.id,
-      name: item.function.name,
-      arguments: item.function.arguments,
+  protected parseLangchainToolCalls(
+    toolCalls: { id?: string; name: string; args: Record<string, unknown> }[],
+  ): ToolCall[] {
+    return toolCalls.map((tc) => ({
+      id: tc.id || crypto.randomUUID(),
+      name: tc.name,
+      arguments: JSON.stringify(tc.args),
     }));
   }
 }

@@ -1,51 +1,46 @@
 import { Logger } from '@nestjs/common';
+import { ChatOpenAI } from '@langchain/openai';
 import { ChatModel, ChatRequest, ChatResponse } from './chat-model';
-import axios from 'axios';
-import { OpenAiResponse, OpenAiStreamResponse } from './types';
 
-const DASHSCOPE_API_URL =
-  'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
 export class DashscopeChatModel extends ChatModel {
   private readonly logger = new Logger(DashscopeChatModel.name);
+  private readonly client: ChatOpenAI;
 
   constructor(
     private readonly apiKey: string,
     private readonly modelName = 'qwen-plus',
   ) {
     super();
+    this.client = new ChatOpenAI({
+      openAIApiKey: this.apiKey,
+      modelName: this.modelName,
+      configuration: {
+        baseURL: DASHSCOPE_BASE_URL,
+      },
+    });
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     const { messageList, systemPrompt, toolList } = request;
-    const apiMessages = this.buildMessages(messageList, systemPrompt);
-    const apiTools =
-      toolList && toolList.length > 0 ? this.buildTools(toolList) : [];
+    const messages = this.buildLangchainMessages(messageList, systemPrompt);
+
     try {
-      const response = await axios.post<OpenAiResponse>(
-        DASHSCOPE_API_URL,
-        {
-          model: this.modelName,
-          messages: apiMessages,
-          stream: false,
-          ...(apiTools.length > 0 ? { tools: apiTools } : {}),
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-        },
-      );
-      const choice = response.data.choices?.[0];
-      if (!choice) {
-        this.logger.error('No response from dashscope');
-        throw new Error('No response from dashscope');
+      let clientWithTools = this.client;
+
+      if (toolList && toolList.length > 0) {
+        const tools = this.buildLangchainTools(toolList);
+        clientWithTools = this.client.bindTools(tools) as ChatOpenAI;
       }
-      const {
-        message: { content = '', tool_calls: openAiToolCalls },
-      } = choice;
-      const toolCallList = this.parseToolCalls(openAiToolCalls);
+
+      const response = await clientWithTools.invoke(messages);
+      const content =
+        typeof response.content === 'string' ? response.content : '';
+      const toolCallList = response.tool_calls
+        ? this.parseLangchainToolCalls(response.tool_calls)
+        : [];
+
       return { content, toolCallList };
     } catch (err) {
       this.logger.error('Dashscope response error:', err);
@@ -53,53 +48,17 @@ export class DashscopeChatModel extends ChatModel {
     }
   }
 
-  async *chatStream?(request: ChatRequest): AsyncIterable<string> {
+  async *chatStream(request: ChatRequest): AsyncIterable<string> {
     const { messageList, systemPrompt } = request;
-    const apiMessages = this.buildMessages(messageList, systemPrompt);
+    const messages = this.buildLangchainMessages(messageList, systemPrompt);
+
     try {
-      const response = await axios.post<AsyncIterable<string>>(
-        DASHSCOPE_API_URL,
-        {
-          model: this.modelName,
-          messages: apiMessages,
-          stream: true,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-        },
-      );
-      for await (const chunk of response.data) {
-        this.logger.debug(
-          `Dashscope stream response: typeof chunk === ${typeof chunk}`,
-        );
-        const lines = chunk.toString().split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              continue;
-            }
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              const resp: OpenAiStreamResponse = JSON.parse(data);
-              const choice = resp.choices?.[0];
-              if (!choice) {
-                this.logger.error('No response from dashscope');
-                continue;
-              }
-              const {
-                delta: { content = '' },
-              } = resp.choices[0];
-              if (content) {
-                yield content;
-              }
-            } catch {
-              // ignore
-            }
-          }
+      const stream = await this.client.stream(messages);
+
+      for await (const chunk of stream) {
+        const content = typeof chunk.content === 'string' ? chunk.content : '';
+        if (content) {
+          yield content;
         }
       }
     } catch (err) {

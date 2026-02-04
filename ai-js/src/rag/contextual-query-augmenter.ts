@@ -1,6 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { createUserMessage, Message } from '../agent/model/message';
-import { ChatModel } from '../llm/chat-model';
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import {
+  HumanMessage,
+  SystemMessage,
+  BaseMessage,
+} from '@langchain/core/messages';
 
 const CONTEXT_AUGMENT_PROMPT = `
   Please generate a more complete and specific query based on the conversation history and the current query
@@ -14,10 +18,10 @@ const CONTEXT_AUGMENT_PROMPT = `
 export class ContextualQueryAugmenter {
   private readonly logger = new Logger(ContextualQueryAugmenter.name);
 
-  constructor(private chatModel: ChatModel) {}
+  constructor(private chatModel: BaseChatModel) {}
   async augment(
     query: string,
-    chatHistory: Message[],
+    chatHistory: BaseMessage[],
     maxHistoryTurns: number = 3,
   ) {
     if (chatHistory.length === 0) {
@@ -25,7 +29,7 @@ export class ContextualQueryAugmenter {
     }
     try {
       const { history: recentHistory } = chatHistory.reduceRight<{
-        history: Message[];
+        history: BaseMessage[];
         turns: number;
       }>(
         (acc, msg) => {
@@ -33,7 +37,7 @@ export class ContextualQueryAugmenter {
             return acc;
           }
           acc.history.unshift(msg);
-          if (msg.role === 'user') {
+          if (msg.type === 'human') {
             acc.turns++;
           }
           return acc;
@@ -41,11 +45,15 @@ export class ContextualQueryAugmenter {
         { history: [], turns: 0 },
       );
       const contextPrompt = this.buildContextPrompt(recentHistory, query);
-      const response = await this.chatModel.chat({
-        messageList: [createUserMessage(contextPrompt)],
-        systemPrompt: CONTEXT_AUGMENT_PROMPT,
-      });
-      const augmentedQuery = response.content.trim();
+      const { content } = await this.chatModel.invoke([
+        new SystemMessage(CONTEXT_AUGMENT_PROMPT),
+        new HumanMessage(contextPrompt),
+      ]);
+      const augmentedQuery = (
+        typeof content === 'string'
+          ? content
+          : content.map((item) => item.text).join('')
+      ).trim();
       if (augmentedQuery.length > 0) {
         this.logger.log(`Query augmented: "${query}" -> "${augmentedQuery}"`);
         return augmentedQuery;
@@ -58,9 +66,12 @@ export class ContextualQueryAugmenter {
     }
   }
 
-  buildContextPrompt(history: Message[], currentQuery: string) {
+  buildContextPrompt(history: BaseMessage[], currentQuery: string) {
     const historyText = history
-      .map((msg) => `${msg.role}: ${msg.content}`)
+      .map(
+        ({ type, content }) =>
+          `${type}: ${typeof content === 'string' ? content : content.map((item) => item.text).join('')}`,
+      )
       .join('\n');
     return `
       conversation history:

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   Logger,
@@ -6,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Document } from '@langchain/core/documents';
 import { Embeddings } from '@langchain/core/embeddings';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import Sqlite3, { Database } from 'better-sqlite3';
 import { ConfigService } from '@nestjs/config';
 import { OllamaEmbeddings } from '@langchain/ollama';
@@ -202,7 +203,7 @@ export class VectorStoreService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Added ${documents.length} documents to vector store`);
   }
 
-  // 相似度搜索
+  // Similarity search
   async similaritySearch(
     query: string,
     maxResults = 5,
@@ -278,7 +279,6 @@ export class VectorStoreService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  // 计算余弦相似度
   private cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
       return 0;
