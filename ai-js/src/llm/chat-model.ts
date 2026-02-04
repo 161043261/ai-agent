@@ -4,7 +4,7 @@ import {
   AIMessage,
 } from '@langchain/core/messages';
 import { ToolCall } from '@langchain/core/messages/tool';
-import { Tool } from '../tools/types';
+import { Tool } from '@langchain/core/tools';
 
 export interface ChatRequest {
   messages: BaseMessage[];
@@ -24,9 +24,9 @@ export abstract class ChatModel {
   abstract chatStream?(request: ChatRequest): AsyncIterable<string>;
 
   /**
-   * Prepend system prompt to messages if provided
+   * Unshift system prompt to messages if provided
    */
-  protected prependSystemPrompt(
+  protected unshiftSystemPrompt(
     messages: BaseMessage[],
     systemPrompt?: string,
   ): BaseMessage[] {

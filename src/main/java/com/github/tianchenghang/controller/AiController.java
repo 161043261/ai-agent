@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
@@ -25,24 +26,28 @@ public class AiController {
   @Resource private ChatModel dashscopeChatModel;
 
   @GetMapping("/code-app/chat/sync")
-  public String doChatWithCodeAppSync(String message, String chatId) {
+  public String doChatWithCodeAppSync(
+      @RequestParam("message") String message, @RequestParam("chat_id") String chatId) {
     return codeApp.doChat(message, chatId);
   }
 
   @GetMapping(value = "/code-app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public Flux<String> doChatWithCodeAppSSE(String message, String chatId) {
+  public Flux<String> doChatWithCodeAppSSE(
+      @RequestParam("message") String message, @RequestParam("chat_id") String chatId) {
     return codeApp.doChatByStream(message, chatId);
   }
 
   @GetMapping(value = "/code-app/chat/sse")
-  public Flux<ServerSentEvent<String>> doChatWithCodeAppSse(String message, String chatId) {
+  public Flux<ServerSentEvent<String>> doChatWithCodeAppSse(
+      @RequestParam("message") String message, @RequestParam("chat_id") String chatId) {
     return codeApp
         .doChatByStream(message, chatId)
         .map(chunk -> ServerSentEvent.<String>builder().data(chunk).build());
   }
 
   @GetMapping(value = "/code-app/chat/sse-emitter")
-  public SseEmitter doChatWithCodeAppSseEmitter(String message, String chatId) {
+  public SseEmitter doChatWithCodeAppSseEmitter(
+      @RequestParam("message") String message, @RequestParam("chat_id") String chatId) {
     var sseEmitter = new SseEmitter(180000L); // 3 分钟超时
     codeApp
         .doChatByStream(message, chatId)
@@ -60,7 +65,7 @@ public class AiController {
   }
 
   @GetMapping("/manus/chat")
-  public SseEmitter doChatWithManus(String message) {
+  public SseEmitter doChatWithManus(@RequestParam("message") String message) {
     var codeManus = new CodeManus(allTools, dashscopeChatModel);
     return codeManus.runStream(message);
   }

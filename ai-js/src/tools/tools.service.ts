@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
 import { StructuredTool } from '@langchain/core/tools';
 import { ToolExecutor } from './types';
@@ -26,6 +25,7 @@ export class ToolsService implements ToolExecutor {
     try {
       this.logger.log(`Executing tool ${toolName} with args: ${argsJson}`);
       const args = JSON.parse(argsJson) as Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await tool.invoke(args);
       this.logger.log(`Tool ${toolName} execution result: ${result}`);
       return typeof result === 'string' ? result : JSON.stringify(result);

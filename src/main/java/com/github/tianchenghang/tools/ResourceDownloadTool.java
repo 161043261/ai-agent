@@ -12,8 +12,7 @@ public class ResourceDownloadTool {
   @Tool(description = "Download resource from url")
   public String downloadResource(
       @ToolParam(description = "Url of the resource to download") String url,
-      @ToolParam(description = "Downloaded resource filename")
-          String filename) {
+      @ToolParam(description = "Downloaded resource filename") String filename) {
     var fileDir = FileConstant.FILE_OUTPUT_DIR + "/download";
     var filepath = fileDir + "/" + filename;
     try {

@@ -1,10 +1,11 @@
 import { ToolCall } from '@langchain/core/messages/tool';
 import { AIMessage, HumanMessage, ToolMessage } from '@langchain/core/messages';
 import { ChatResponse } from '../llm/chat-model';
-import { Tool, ToolExecutor } from '../tools/types';
+import { ToolExecutor } from '../tools/types';
 import { TerminateTool } from '../tools/terminate-tool';
 import { AgentState } from './model/agent-state.enum';
 import { ReActAgent } from './re-act-agent';
+import { Tool } from '@langchain/core/tools';
 
 export class ToolCallAgent extends ReActAgent {
   // Available tools

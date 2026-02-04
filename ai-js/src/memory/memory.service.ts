@@ -13,15 +13,15 @@ export class MemoryService implements ChatMemory {
     this.logger.log('In-memory chat memory service initialized');
   }
 
-  async add(conversationId: string, messages: BaseMessage[]): Promise<void> {
-    await this.memory.add(conversationId, messages);
+  async add(chaId: string, messages: BaseMessage[]): Promise<void> {
+    await this.memory.add(chaId, messages);
   }
 
-  async get(conversationId: string): Promise<BaseMessage[]> {
-    return this.memory.get(conversationId);
+  async get(chaId: string): Promise<BaseMessage[]> {
+    return this.memory.get(chaId);
   }
 
-  async clear(conversationId: string): Promise<void> {
-    await this.memory.clear(conversationId);
+  async clear(chaId: string): Promise<void> {
+    await this.memory.clear(chaId);
   }
 }

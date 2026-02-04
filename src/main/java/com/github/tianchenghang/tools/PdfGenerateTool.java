@@ -17,10 +17,10 @@ public class PdfGenerateTool {
 
   @Tool(description = "Generate a pdf file with content", returnDirect = false)
   public String generatePDF(
-      @ToolParam(description = "Generated pdf filename") String fileName,
+      @ToolParam(description = "Generated pdf filename") String filename,
       @ToolParam(description = "Content to be written to the pdf") String content) {
     var fileDir = FileConstant.FILE_OUTPUT_DIR + "/pdf";
-    var filepath = fileDir + "/" + fileName;
+    var filepath = fileDir + "/" + filename;
     try {
       // Create directory
       FileUtil.mkdir(fileDir);

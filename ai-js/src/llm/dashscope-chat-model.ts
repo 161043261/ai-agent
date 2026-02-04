@@ -25,7 +25,7 @@ export class DashscopeChatModel extends ChatModel {
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     const { messages, systemPrompt, tools } = request;
-    const finalMessages = this.prependSystemPrompt(messages, systemPrompt);
+    const finalMessages = this.unshiftSystemPrompt(messages, systemPrompt);
 
     try {
       let client = this.client;
@@ -51,7 +51,7 @@ export class DashscopeChatModel extends ChatModel {
 
   async *chatStream(request: ChatRequest): AsyncIterable<string> {
     const { messages, systemPrompt } = request;
-    const finalMessages = this.prependSystemPrompt(messages, systemPrompt);
+    const finalMessages = this.unshiftSystemPrompt(messages, systemPrompt);
 
     try {
       const stream = await this.client.stream(finalMessages);

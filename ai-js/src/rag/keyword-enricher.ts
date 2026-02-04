@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Logger } from '@nestjs/common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
@@ -51,6 +50,7 @@ export class KeywordEnricher {
         ? response.content
         : JSON.stringify(response.content);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const parsed = JSON.parse(responseText.trim());
       if (Array.isArray(parsed)) {
         return parsed.filter((item) => typeof item === 'string');
