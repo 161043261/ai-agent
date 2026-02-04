@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 import ensureDir from './ensure-dir';
 import axios from 'axios';
 import { writeFile } from 'fs/promises';
@@ -36,8 +36,8 @@ export class ResourceDownloadTool extends BaseTool {
       await writeFile(filepath, response.data);
       return `Resource downloaded successfully to: ${filepath}`;
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error downloading resource: ${errMessage}`;
+      this.logger.error('Downloading resource error:', err);
+      return 'Downloading resource error';
     }
   }
 }

@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 import ensureDir from './ensure-dir';
 import PDFDocument from 'pdfkit';
 import { createWriteStream, existsSync } from 'fs';
@@ -54,8 +54,8 @@ export class PdfGenerateTool extends BaseTool {
         doc.font(FONT_PATH).text(content).end();
       });
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error generating pdf: ${errMessage}`;
+      this.logger.error('Generating pdf error:', err);
+      return 'Generating pdf error';
     }
   }
 }

@@ -1,5 +1,5 @@
 import { ChatResponse } from '../llm/chat-model';
-import { Tool, ToolExecutor } from '../tools/base-tool';
+import { Tool, ToolExecutor } from '../tools/types';
 import { TerminateTool } from '../tools/terminate-tool';
 import { AgentState } from './model/agent-state.enum';
 import {
@@ -71,10 +71,9 @@ export class ToolCallAgent extends ReActAgent {
       // automatically recorded during tool calls
       return true;
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error(`${this.name} process error: ${errMessage}`);
+      this.logger.error(`${this.name} process error:`, err);
       this.messageList.push(
-        createAssistantMessage(`${this.name} process error: ${errMessage}`),
+        createAssistantMessage(`${this.name} process error`),
       );
       return false;
     }
@@ -109,10 +108,10 @@ export class ToolCallAgent extends ReActAgent {
           this.state = AgentState.FINISHED;
         }
       } catch (err) {
-        const errMessage = err instanceof Error ? err.message : String(err);
-        const errResult = `Executing tool ${toolCall.name} error: ${errMessage}`;
+        this.logger.error(`Executing tool ${toolCall.name} error:`, err);
+        const errResult = `Executing tool ${toolCall.name} error`;
         this.messageList.push(
-          createToolMessage(toolCall.id, toolCall.name, errMessage),
+          createToolMessage(toolCall.id, toolCall.name, errResult),
         );
         this.emitToolResult(toolCall.name, errResult);
         results.push(errResult);

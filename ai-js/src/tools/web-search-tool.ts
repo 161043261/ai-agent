@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 
 export class WebSearchTool extends BaseTool {
   name = WebSearchTool.name;
@@ -45,8 +45,8 @@ export class WebSearchTool extends BaseTool {
       const topResults = originalResults.slice(0, 5);
       return JSON.stringify(topResults, null, 2);
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error searching web: ${errMessage}`;
+      this.logger.log('Searching web error:', err);
+      return 'Searching web error';
     }
   }
 }

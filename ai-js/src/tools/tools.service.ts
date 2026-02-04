@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Tool, ToolExecutor, BaseTool } from './base-tool';
+import { Tool, ToolExecutor, BaseTool } from './types';
 import { ReadFileTool, WriteFileTool } from './file-operation-tool';
 import { WebScrapeTool } from './web-scrape-tool';
 import { ResourceDownloadTool } from './resource-download-tool';
@@ -15,27 +15,19 @@ export class ToolsService implements ToolExecutor {
     this.registerTools();
   }
 
-  async execute(
-    toolName: string,
-    args: Record<string, unknown>,
-  ): Promise<string> {
+  async execute(toolName: string, argsJson: string): Promise<string> {
     const tool = this.getTool(toolName);
     if (!tool) {
       return `Unknown tool: ${toolName}`;
     }
     try {
-      this.logger.log(
-        `Executing tool ${toolName} with args: ${JSON.stringify(args)}`,
-      );
-      const result = await tool.execute(args);
+      this.logger.log(`Executing tool ${toolName} with args: ${argsJson}`);
+      const result = await tool.execute(JSON.parse(argsJson));
       this.logger.log(`Tool ${toolName} execution result: ${result}`);
       return result;
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error(
-        `Error executing tool ${toolName}, error: ${errMessage}`,
-      );
-      return `Error executing tool ${toolName}, error: ${errMessage}`;
+      this.logger.error(`Error executing tool ${toolName}, error:`, err);
+      return `Error executing tool ${toolName}`;
     }
   }
 

@@ -1,5 +1,5 @@
 import { ChatModel } from '../llm/chat-model';
-import { Tool, ToolExecutor } from '../tools/base-tool';
+import { Tool, ToolExecutor } from '../tools/types';
 import { ToolCallAgent } from './tool-call-agent';
 
 const SYSTEM_PROMPT = `

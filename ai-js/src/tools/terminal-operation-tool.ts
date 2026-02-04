@@ -1,4 +1,4 @@
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -30,8 +30,8 @@ export class TerminalOperationTool extends BaseTool {
       }
       return stdout;
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error executing command: ${errMessage}`;
+      this.logger.error('Executing command error:', err);
+      return 'Executing command error';
     }
   }
 }

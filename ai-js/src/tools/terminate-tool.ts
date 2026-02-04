@@ -1,4 +1,4 @@
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 
 export class TerminateTool extends BaseTool {
   name = TerminateTool.name;

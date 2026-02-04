@@ -46,9 +46,8 @@ export abstract class BaseAgent {
       return results.join('\n');
     } catch (err) {
       this.state = AgentState.ERROR;
-      const errMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error('Executing agent error:', errMessage);
-      return `Executing agent error: ${errMessage}`;
+      this.logger.error('Executing agent error:', err);
+      return 'Executing agent error';
     } finally {
       this.cleanup();
     }
@@ -57,6 +56,7 @@ export abstract class BaseAgent {
   runStream(userPrompt: string): Observable<string> {
     const subject = new Subject<string>();
 
+    // Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator.
     (async () => {
       try {
         if (this.state !== AgentState.IDLE) {
@@ -119,23 +119,25 @@ export abstract class BaseAgent {
         subject.complete();
       } catch (err) {
         this.state = AgentState.ERROR;
-        const errMessage = err instanceof Error ? err.message : String(err);
-        this.logger.error(`Executing agent error: ${errMessage}`);
+        this.logger.error('Executing agent error:', err);
         subject.next(
           JSON.stringify({
             type: EventName.ERROR,
-            content: `Executing agent error: ${errMessage}`,
+            content: 'Executing agent error',
           }),
         );
         subject.complete();
       } finally {
         this.cleanup();
       }
-    })();
+    })().catch((err) => {
+      this.logger.error('Stream error:', err);
+    });
 
     return subject.asObservable();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async stepWithEmitter(emitter: Subject<string>): Promise<string> {
     return this.step();
   }

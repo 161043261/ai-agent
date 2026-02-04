@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 import cheerio from 'cheerio';
 
 export class WebScrapeTool extends BaseTool {
@@ -35,12 +35,8 @@ export class WebScrapeTool extends BaseTool {
         return data;
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        const { status } = err.response ?? {};
-        return `Error scraping web page, status: ${status}`;
-      }
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error scraping web page: ${errMessage}`;
+      this.logger.error('Scraping web error:', err);
+      return 'Scraping web page error';
     }
   }
 }

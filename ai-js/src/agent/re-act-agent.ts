@@ -42,9 +42,8 @@ export abstract class ReActAgent extends BaseAgent {
       }
       return await this.act();
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      this.logger.log(`Step execute failed: ${errMessage}`);
-      return `Step execute failed: ${errMessage}`;
+      this.logger.log('Step execute error:', err);
+      return 'Step execute error';
     }
   }
 

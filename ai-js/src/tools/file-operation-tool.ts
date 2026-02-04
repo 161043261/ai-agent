@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { BaseTool, ToolParameter } from './base-tool';
+import { BaseTool, ToolParameter } from './types';
 import { readFile, writeFile } from 'fs/promises';
 import ensureDir from './ensure-dir';
 
@@ -24,8 +24,8 @@ export class ReadFileTool extends BaseTool {
       const content = await readFile(filepath, 'utf-8');
       return content;
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error reading file: ${errMessage}`;
+      this.logger.error('Reading file error:', err);
+      return 'Reading file error';
     }
   }
 }
@@ -56,8 +56,8 @@ export class WriteFileTool extends BaseTool {
       await writeFile(filepath, content, 'utf-8');
       return `File written successfully to: ${filepath}`;
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      return `Error writing file: ${errMessage}`;
+      this.logger.log('Writing file error:', err);
+      return 'Writing file error';
     }
   }
 }
