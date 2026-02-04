@@ -4,7 +4,7 @@ import { Tool, ToolExecutor } from '../tools/types';
 import { TerminateTool } from '../tools/terminate-tool';
 import { AgentState } from './model/agent-state.enum';
 import {
-  createAssistantMessage,
+  createAiMessage,
   createToolMessage,
   createUserMessage,
 } from './model/message';
@@ -56,7 +56,7 @@ export class ToolCallAgent extends ReActAgent {
       // If no tools need to be called, return false
       if (!toolCalls || toolCalls.length == 0) {
         // Only when no tools are called, manually record the assistant message
-        this.messages.push(createAssistantMessage(content));
+        this.messages.push(createAiMessage(content));
         return false;
       }
 
@@ -76,7 +76,7 @@ export class ToolCallAgent extends ReActAgent {
       return true;
     } catch (err) {
       this.logger.error(`${this.name} process error:`, err);
-      this.messages.push(createAssistantMessage(`${this.name} process error`));
+      this.messages.push(createAiMessage(`${this.name} process error`));
       return false;
     }
   }
@@ -89,7 +89,7 @@ export class ToolCallAgent extends ReActAgent {
     if (!toolCalls || toolCalls.length === 0) {
       return 'No tools need to be called';
     }
-    this.messages.push(createAssistantMessage(content, toolCalls));
+    this.messages.push(createAiMessage(content, toolCalls));
     const results: string[] = [];
 
     // Call tools

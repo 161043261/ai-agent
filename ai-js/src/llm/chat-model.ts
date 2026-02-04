@@ -11,7 +11,7 @@ export interface ChatRequest {
   messages: BaseMessage[];
   systemPrompt?: string;
   tools?: Tool[];
-  isStream?: boolean;
+  stream?: boolean;
 }
 
 export interface ChatResponse {

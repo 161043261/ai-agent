@@ -1,6 +1,5 @@
 import { mkdir, access, writeFile, readFile, unlink } from 'fs/promises';
 import { BaseMessage } from '@langchain/core/messages';
-import { serializeMessages, deserializeMessages } from '../agent/model/message';
 import { ChatMemory } from './chat-memory';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
@@ -39,7 +38,7 @@ export class FileBasedChatMemory implements ChatMemory {
     const filepath = this.getFilepath(chatId);
     try {
       const content = await readFile(filepath, 'utf-8');
-      return deserializeMessages(content);
+      return JSON.parse(content) as BaseMessage[];
     } catch (err) {
       this.logger.log(`Read content from ${filepath} error:`, err);
       return [];
@@ -58,6 +57,6 @@ export class FileBasedChatMemory implements ChatMemory {
   private async save(chatId: string, messages: BaseMessage[]) {
     await this.ensureDir();
     const filepath = this.getFilepath(chatId);
-    await writeFile(filepath, serializeMessages(messages), 'utf-8');
+    await writeFile(filepath, JSON.stringify(messages), 'utf-8');
   }
 }
