@@ -1,3 +1,4 @@
+import { ToolCall } from '@langchain/core/messages/tool';
 import { ChatResponse } from '../llm/chat-model';
 import { Tool, ToolExecutor } from '../tools/types';
 import { TerminateTool } from '../tools/terminate-tool';
@@ -29,7 +30,7 @@ export class ToolCallAgent extends ReActAgent {
   async think(): Promise<boolean> {
     // Validate the prompt and concatenate the user prompt
     if (this.nextStepPrompt.trim()) {
-      this.messageList.push(createUserMessage(this.nextStepPrompt.trim()));
+      this.messages.push(createUserMessage(this.nextStepPrompt.trim()));
     }
     try {
       if (!this.chatModel) {
@@ -37,44 +38,45 @@ export class ToolCallAgent extends ReActAgent {
       }
       // Call the AI model to get the tool call results
       const response = await this.chatModel.chat({
-        messageList: this.messageList,
+        messages: this.messages,
         systemPrompt: this.systemPrompt,
-        toolList: this.availableTools,
+        tools: this.availableTools,
       });
       // Record the response for later use in Act
       this.toolCallResponse = response;
 
-      const { content, toolCallList } = response;
+      const { content, toolCalls } = response;
       this.logger.log(`${this.name} thinking: ${content}`);
       this.logger.log(
-        `${this.name} selected ${toolCallList?.length ?? 0} tools to use`,
+        `${this.name} selected ${toolCalls?.length ?? 0} tools to use`,
       );
       // Send the thinking content to SSE
       this.emitThinking(content);
 
       // If no tools need to be called, return false
-      if (!toolCallList || toolCallList.length == 0) {
+      if (!toolCalls || toolCalls.length == 0) {
         // Only when no tools are called, manually record the assistant message
-        this.messageList.push(createAssistantMessage(content));
+        this.messages.push(createAssistantMessage(content));
         return false;
       }
 
-      const toolCallInfo = toolCallList
-        .map((item) => `Tool name: ${item.name}, arguments: ${item.arguments}`)
+      const toolCallInfo = toolCalls
+        .map(
+          (item: ToolCall) =>
+            `Tool name: ${item.name}, arguments: ${JSON.stringify(item.args)}`,
+        )
         .join('\n');
       this.logger.log('Tool call information:', toolCallInfo);
       // Send tool call information to SSE
-      for (const item of toolCallList) {
-        this.emitToolCall(item.name, item.arguments);
+      for (const item of toolCalls) {
+        this.emitToolCall(item.name, JSON.stringify(item.args));
       }
       // When tools need to be called, no need to record the assistant message as it will be
       // automatically recorded during tool calls
       return true;
     } catch (err) {
       this.logger.error(`${this.name} process error:`, err);
-      this.messageList.push(
-        createAssistantMessage(`${this.name} process error`),
-      );
+      this.messages.push(createAssistantMessage(`${this.name} process error`));
       return false;
     }
   }
@@ -83,22 +85,23 @@ export class ToolCallAgent extends ReActAgent {
     if (!this.toolCallResponse) {
       return 'No tools need to be called';
     }
-    const { content, toolCallList } = this.toolCallResponse;
-    if (!toolCallList || toolCallList.length === 0) {
+    const { content, toolCalls } = this.toolCallResponse;
+    if (!toolCalls || toolCalls.length === 0) {
       return 'No tools need to be called';
     }
-    this.messageList.push(createAssistantMessage(content, toolCallList));
+    this.messages.push(createAssistantMessage(content, toolCalls));
     const results: string[] = [];
 
     // Call tools
-    for (const toolCall of toolCallList) {
+    for (const toolCall of toolCalls) {
+      const toolCallId = toolCall.id || crypto.randomUUID();
       try {
         const result = await this.toolExecutor.execute(
           toolCall.name,
-          toolCall.arguments,
+          JSON.stringify(toolCall.args),
         );
-        this.messageList.push(
-          createToolMessage(toolCall.id, toolCall.name, result),
+        this.messages.push(
+          createToolMessage(toolCallId, toolCall.name, result),
         );
         // Send each tool's result to SSE
         this.emitToolResult(toolCall.name, result);
@@ -110,8 +113,8 @@ export class ToolCallAgent extends ReActAgent {
       } catch (err) {
         this.logger.error(`Executing tool ${toolCall.name} error:`, err);
         const errResult = `Executing tool ${toolCall.name} error`;
-        this.messageList.push(
-          createToolMessage(toolCall.id, toolCall.name, errResult),
+        this.messages.push(
+          createToolMessage(toolCallId, toolCall.name, errResult),
         );
         this.emitToolResult(toolCall.name, errResult);
         results.push(errResult);

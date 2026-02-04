@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { BaseMessage } from '@langchain/core/messages';
 import { ChatMemory } from './chat-memory';
 import { InMemoryChatMemory } from './in-memory-chat-history';
-import { Message } from '../agent/model/message';
 
 @Injectable()
 export class MemoryService implements ChatMemory {
@@ -13,11 +13,11 @@ export class MemoryService implements ChatMemory {
     this.logger.log('In-memory chat memory service initialized');
   }
 
-  async add(conversationId: string, messages: Message[]): Promise<void> {
+  async add(conversationId: string, messages: BaseMessage[]): Promise<void> {
     await this.memory.add(conversationId, messages);
   }
 
-  async get(conversationId: string): Promise<Message[]> {
+  async get(conversationId: string): Promise<BaseMessage[]> {
     return this.memory.get(conversationId);
   }
 

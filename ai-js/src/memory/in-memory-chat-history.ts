@@ -1,15 +1,15 @@
-import { Message } from '../agent/model/message';
+import { BaseMessage } from '@langchain/core/messages';
 import { ChatMemory } from './chat-memory';
 
 export class InMemoryChatMemory implements ChatMemory {
-  private chats = new Map<string, Message[]>();
+  private chats = new Map<string, BaseMessage[]>();
   private maxMessages = 10;
 
   constructor(maxMessages = 10) {
     this.maxMessages = maxMessages;
   }
 
-  async add(chatId: string, messages: Message[]) {
+  async add(chatId: string, messages: BaseMessage[]) {
     const history = this.chats.get(chatId) ?? [];
     const newHistory = [...history, ...messages];
     if (newHistory.length > this.maxMessages) {
@@ -19,7 +19,7 @@ export class InMemoryChatMemory implements ChatMemory {
     }
   }
 
-  async get(chatId: string): Promise<Message[]> {
+  async get(chatId: string): Promise<BaseMessage[]> {
     return this.chats.get(chatId) ?? [];
   }
 

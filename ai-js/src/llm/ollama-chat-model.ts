@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
+import { AIMessage } from '@langchain/core/messages';
 import { ChatModel, ChatRequest, ChatResponse } from './chat-model';
 
 interface OllamaModels {
@@ -24,25 +25,26 @@ export class OllamaChatModel extends ChatModel {
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
-    const { messageList, systemPrompt, toolList } = request;
-    const messages = this.buildLangchainMessages(messageList, systemPrompt);
+    const { messages, systemPrompt, tools } = request;
+    const finalMessages = this.prependSystemPrompt(messages, systemPrompt);
 
     try {
-      let clientWithTools = this.client;
+      let client = this.client;
 
-      if (toolList && toolList.length > 0) {
-        const tools = this.buildLangchainTools(toolList);
-        clientWithTools = this.client.bindTools(tools) as ChatOllama;
+      if (tools && tools.length > 0) {
+        const langchainTools = this.buildLangchainTools(tools);
+        client = this.client.bindTools(langchainTools) as ChatOllama;
       }
 
-      const response = await clientWithTools.invoke(messages);
+      const response = await client.invoke(finalMessages);
       const content =
         typeof response.content === 'string' ? response.content : '';
-      const toolCallList = response.tool_calls
-        ? this.parseLangchainToolCalls(response.tool_calls)
-        : [];
 
-      return { content, toolCallList };
+      return {
+        message: response as AIMessage,
+        content,
+        toolCalls: response.tool_calls,
+      };
     } catch (err) {
       this.logger.error('Ollama response error:', err);
       throw err;
@@ -50,17 +52,17 @@ export class OllamaChatModel extends ChatModel {
   }
 
   async *chatStream(request: ChatRequest): AsyncIterable<string> {
-    const { messageList, systemPrompt } = request;
-    const messages = this.buildLangchainMessages(messageList, systemPrompt);
+    const { messages, systemPrompt } = request;
+    const finalMessages = this.prependSystemPrompt(messages, systemPrompt);
 
     try {
-      const stream = await this.client.stream(messages);
+      const stream = await this.client.stream(finalMessages);
 
       for await (const chunk of stream) {
         const content =
           typeof chunk.content === 'string'
             ? chunk.content
-            : chunk.content.map((item) => item.text).join('');
+            : JSON.stringify(chunk.content);
         if (content) {
           yield content;
         }

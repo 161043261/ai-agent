@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { HumanMessage } from '@langchain/core/messages';
 import { ChatRequest, ChatResponse } from '../llm/chat-model';
 
 export interface Advisor {
@@ -21,13 +22,16 @@ export class LoggerAdvisor implements Advisor, StreamAdvisor {
   order: number;
 
   before?(request: ChatRequest): ChatRequest {
-    const userMessage = request.messageList.find(
-      (item) => item.role === 'user',
+    const userMessage = request.messages.find(
+      (item) => item instanceof HumanMessage,
     );
     if (!userMessage) {
       return request;
     }
-    const { content } = userMessage;
+    const content =
+      typeof userMessage.content === 'string'
+        ? userMessage.content
+        : JSON.stringify(userMessage.content);
     if (!content) {
       return request;
     }
@@ -36,14 +40,14 @@ export class LoggerAdvisor implements Advisor, StreamAdvisor {
   }
 
   after?(response: ChatResponse): ChatResponse {
-    const { content, toolCallList } = response;
+    const { content, toolCalls } = response;
     if (!content) {
       return response;
     }
     this.logger.log(`AI response: ${content}`);
-    if (toolCallList && toolCallList.length > 0) {
+    if (toolCalls && toolCalls.length > 0) {
       this.logger.log(
-        `Tool calls: ${toolCallList.map((item) => item.name).join(',')}`,
+        `Tool calls: ${toolCalls.map((item) => item.name).join(',')}`,
       );
     }
     return response;
@@ -62,19 +66,20 @@ export class ReReadingAdvisor implements Advisor {
   order = 1;
 
   before(request: ChatRequest): ChatRequest {
-    const { messageList } = request;
-    const userMessageIdx = messageList.findIndex(
-      (item) => item.role === 'user',
+    const { messages } = request;
+    const userMessageIdx = messages.findIndex(
+      (item) => item instanceof HumanMessage,
     );
     if (userMessageIdx === -1) {
       return request;
     }
-    const userText = messageList[userMessageIdx].content;
+    const userMessage = messages[userMessageIdx];
+    const userText =
+      typeof userMessage.content === 'string'
+        ? userMessage.content
+        : JSON.stringify(userMessage.content);
     const newUserText = `${userText}\nRead the question again: ${userText}`;
-    messageList[userMessageIdx] = {
-      ...messageList[userMessageIdx],
-      content: newUserText,
-    };
+    messages[userMessageIdx] = new HumanMessage(newUserText);
     this.logger.debug(`Re2 enhanced prompt: ${newUserText}`);
     return request;
   }
@@ -82,7 +87,6 @@ export class ReReadingAdvisor implements Advisor {
 
 @Injectable()
 export class AdvisorChain {
-  // private readonly logger = new Logger(AdvisorChain.name);
   private advisors: Advisor[] = [];
   private streamAdvisors: StreamAdvisor[] = [];
 

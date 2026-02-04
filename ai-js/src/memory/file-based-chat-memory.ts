@@ -1,5 +1,6 @@
 import { mkdir, access, writeFile, readFile, unlink } from 'fs/promises';
-import { Message } from '../agent/model/message';
+import { BaseMessage } from '@langchain/core/messages';
+import { serializeMessages, deserializeMessages } from '../agent/model/message';
 import { ChatMemory } from './chat-memory';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
@@ -27,18 +28,18 @@ export class FileBasedChatMemory implements ChatMemory {
     return join(this.baseDir, `${chatId}.json`);
   }
 
-  async add(chatId: string, messages: Message[]) {
+  async add(chatId: string, messages: BaseMessage[]) {
     await this.ensureDir();
     const history = await this.get(chatId);
     const newHistory = [...history, ...messages];
     await this.save(chatId, newHistory);
   }
 
-  async get(chatId: string): Promise<Message[]> {
+  async get(chatId: string): Promise<BaseMessage[]> {
     const filepath = this.getFilepath(chatId);
     try {
       const content = await readFile(filepath, 'utf-8');
-      return JSON.parse(content) as Message[];
+      return deserializeMessages(content);
     } catch (err) {
       this.logger.log(`Read content from ${filepath} error:`, err);
       return [];
@@ -54,9 +55,9 @@ export class FileBasedChatMemory implements ChatMemory {
     }
   }
 
-  private async save(chatId: string, messages: Message[]) {
+  private async save(chatId: string, messages: BaseMessage[]) {
     await this.ensureDir();
     const filepath = this.getFilepath(chatId);
-    await writeFile(filepath, JSON.stringify(messages, null, 2), 'utf-8');
+    await writeFile(filepath, serializeMessages(messages), 'utf-8');
   }
 }

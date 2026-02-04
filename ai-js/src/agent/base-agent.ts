@@ -1,15 +1,13 @@
 import { Logger } from '@nestjs/common';
+import { BaseMessage } from '@langchain/core/messages';
 import { AgentState } from './model/agent-state.enum';
 import { ChatModel } from '../llm/chat-model';
-import { createUserMessage, Message } from './model/message';
+import { createUserMessage } from './model/message';
 import { Observable, Subject } from 'rxjs';
 import { EventName } from './model/event-name.enum';
 
 export abstract class BaseAgent {
-  protected readonly logger = new Logger(
-    // BaseAgent.name
-    this.constructor.name,
-  );
+  protected readonly logger = new Logger(this.constructor.name);
 
   name = this.constructor.name;
   systemPrompt = '';
@@ -18,7 +16,7 @@ export abstract class BaseAgent {
   currentStep = 0;
   maxSteps = 10;
   chatModel: ChatModel | null = null;
-  messageList: Message[] = [];
+  messages: BaseMessage[] = [];
 
   protected get isNotFinished() {
     return this.state !== AgentState.FINISHED;
@@ -32,7 +30,7 @@ export abstract class BaseAgent {
       throw new Error('Cannot run agent with empty user prompt');
     }
     this.state = AgentState.RUNNING;
-    this.messageList.push(createUserMessage(userPrompt));
+    this.messages.push(createUserMessage(userPrompt));
     const results: string[] = [];
     try {
       for (let i = 0; i < this.maxSteps && this.isNotFinished; i++) {
@@ -56,7 +54,6 @@ export abstract class BaseAgent {
   runStream(userPrompt: string): Observable<string> {
     const subject = new Subject<string>();
 
-    // Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator.
     (async () => {
       try {
         if (this.state !== AgentState.IDLE) {
@@ -85,7 +82,7 @@ export abstract class BaseAgent {
       }
 
       this.state = AgentState.RUNNING;
-      this.messageList.push(createUserMessage(userPrompt));
+      this.messages.push(createUserMessage(userPrompt));
       try {
         for (let i = 0; i < this.maxSteps && this.isNotFinished; i++) {
           const stepNumber = i + 1;
