@@ -1,26 +1,13 @@
-import { Logger } from '@nestjs/common';
+import { StructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
 
-export interface ToolParameter {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
-  description: string;
-  required?: boolean;
-}
+// Re-export LangChain tool types
+export { StructuredTool, z };
 
-export interface Tool {
-  name: string;
-  description: string;
-  parameters: ToolParameter[];
-}
-
+// Tool executor interface (project-specific)
 export interface ToolExecutor {
   execute(toolName: string, args: string): Promise<string>;
 }
 
-export abstract class BaseTool implements Tool {
-  protected readonly logger = new Logger(this.constructor.name);
-  abstract name: string;
-  abstract description: string;
-  abstract parameters: ToolParameter[];
-  abstract execute(args: Record<string, unknown>): Promise<string>;
-}
+// Type alias for convenience
+export type Tool = StructuredTool;

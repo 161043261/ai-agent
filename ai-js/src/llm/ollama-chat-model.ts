@@ -32,8 +32,7 @@ export class OllamaChatModel extends ChatModel {
       let client = this.client;
 
       if (tools && tools.length > 0) {
-        const langchainTools = this.buildLangchainTools(tools);
-        client = this.client.bindTools(langchainTools) as ChatOllama;
+        client = this.client.bindTools(tools) as ChatOllama;
       }
 
       const response = await client.invoke(finalMessages);

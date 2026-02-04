@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Tool, ToolExecutor, BaseTool } from './types';
+import { StructuredTool } from '@langchain/core/tools';
+import { Tool, ToolExecutor } from './types';
 import { ReadFileTool, WriteFileTool } from './file-operation-tool';
 import { WebScrapeTool } from './web-scrape-tool';
 import { ResourceDownloadTool } from './resource-download-tool';
@@ -10,7 +11,8 @@ import { PdfGenerateTool } from './pdf-generation';
 @Injectable()
 export class ToolsService implements ToolExecutor {
   private readonly logger = new Logger(ToolsService.name);
-  private readonly tools = new Map<string, BaseTool>();
+  private readonly tools = new Map<string, StructuredTool>();
+
   constructor() {
     this.registerTools();
   }
@@ -22,7 +24,8 @@ export class ToolsService implements ToolExecutor {
     }
     try {
       this.logger.log(`Executing tool ${toolName} with args: ${argsJson}`);
-      const result = await tool.execute(JSON.parse(argsJson));
+      const args = JSON.parse(argsJson) as Record<string, unknown>;
+      const result = await tool.invoke(args);
       this.logger.log(`Tool ${toolName} execution result: ${result}`);
       return result;
     } catch (err) {
@@ -32,7 +35,7 @@ export class ToolsService implements ToolExecutor {
   }
 
   private registerTools() {
-    const toolInstances: BaseTool[] = [
+    const toolInstances: StructuredTool[] = [
       new ReadFileTool(),
       new WriteFileTool(),
       new WebScrapeTool(),
@@ -49,11 +52,7 @@ export class ToolsService implements ToolExecutor {
   }
 
   getAllTools(): Tool[] {
-    return Array.from(this.tools.values()).map((item) => ({
-      name: item.name,
-      description: item.description,
-      parameters: item.parameters,
-    }));
+    return Array.from(this.tools.values());
   }
 
   getTool(name: string) {

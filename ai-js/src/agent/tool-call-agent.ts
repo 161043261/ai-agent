@@ -1,13 +1,9 @@
 import { ToolCall } from '@langchain/core/messages/tool';
+import { AIMessage, HumanMessage, ToolMessage } from '@langchain/core/messages';
 import { ChatResponse } from '../llm/chat-model';
 import { Tool, ToolExecutor } from '../tools/types';
 import { TerminateTool } from '../tools/terminate-tool';
 import { AgentState } from './model/agent-state.enum';
-import {
-  createAiMessage,
-  createToolMessage,
-  createUserMessage,
-} from './model/message';
 import { ReActAgent } from './re-act-agent';
 
 export class ToolCallAgent extends ReActAgent {
@@ -30,7 +26,7 @@ export class ToolCallAgent extends ReActAgent {
   async think(): Promise<boolean> {
     // Validate the prompt and concatenate the user prompt
     if (this.nextStepPrompt.trim()) {
-      this.messages.push(createUserMessage(this.nextStepPrompt.trim()));
+      this.messages.push(new HumanMessage(this.nextStepPrompt.trim()));
     }
     try {
       if (!this.chatModel) {
@@ -56,7 +52,7 @@ export class ToolCallAgent extends ReActAgent {
       // If no tools need to be called, return false
       if (!toolCalls || toolCalls.length == 0) {
         // Only when no tools are called, manually record the assistant message
-        this.messages.push(createAiMessage(content));
+        this.messages.push(new AIMessage(content));
         return false;
       }
 
@@ -76,7 +72,7 @@ export class ToolCallAgent extends ReActAgent {
       return true;
     } catch (err) {
       this.logger.error(`${this.name} process error:`, err);
-      this.messages.push(createAiMessage(`${this.name} process error`));
+      this.messages.push(new AIMessage(`${this.name} process error`));
       return false;
     }
   }
@@ -89,7 +85,7 @@ export class ToolCallAgent extends ReActAgent {
     if (!toolCalls || toolCalls.length === 0) {
       return 'No tools need to be called';
     }
-    this.messages.push(createAiMessage(content, toolCalls));
+    this.messages.push(new AIMessage({ content, tool_calls: toolCalls }));
     const results: string[] = [];
 
     // Call tools
@@ -101,7 +97,7 @@ export class ToolCallAgent extends ReActAgent {
           JSON.stringify(toolCall.args),
         );
         this.messages.push(
-          createToolMessage(toolCallId, toolCall.name, result),
+          new ToolMessage({ content: result, tool_call_id: toolCallId, name: toolCall.name }),
         );
         // Send each tool's result to SSE
         this.emitToolResult(toolCall.name, result);
@@ -114,7 +110,7 @@ export class ToolCallAgent extends ReActAgent {
         this.logger.error(`Executing tool ${toolCall.name} error:`, err);
         const errResult = `Executing tool ${toolCall.name} error`;
         this.messages.push(
-          createToolMessage(toolCallId, toolCall.name, errResult),
+          new ToolMessage({ content: errResult, tool_call_id: toolCallId, name: toolCall.name }),
         );
         this.emitToolResult(toolCall.name, errResult);
         results.push(errResult);

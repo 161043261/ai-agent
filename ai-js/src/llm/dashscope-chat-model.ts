@@ -31,8 +31,7 @@ export class DashscopeChatModel extends ChatModel {
       let client = this.client;
 
       if (tools && tools.length > 0) {
-        const langchainTools = this.buildLangchainTools(tools);
-        client = this.client.bindTools(langchainTools) as ChatOpenAI;
+        client = this.client.bindTools(tools) as ChatOpenAI;
       }
 
       const response = await client.invoke(finalMessages);

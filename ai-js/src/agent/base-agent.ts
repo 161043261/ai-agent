@@ -1,8 +1,7 @@
 import { Logger } from '@nestjs/common';
-import { BaseMessage } from '@langchain/core/messages';
+import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { AgentState } from './model/agent-state.enum';
 import { ChatModel } from '../llm/chat-model';
-import { createUserMessage } from './model/message';
 import { Observable, Subject } from 'rxjs';
 import { EventName } from './model/event-name.enum';
 
@@ -30,7 +29,7 @@ export abstract class BaseAgent {
       throw new Error('Cannot run agent with empty user prompt');
     }
     this.state = AgentState.RUNNING;
-    this.messages.push(createUserMessage(userPrompt));
+    this.messages.push(new HumanMessage(userPrompt));
     const results: string[] = [];
     try {
       for (let i = 0; i < this.maxSteps && this.isNotFinished; i++) {
@@ -82,7 +81,7 @@ export abstract class BaseAgent {
       }
 
       this.state = AgentState.RUNNING;
-      this.messages.push(createUserMessage(userPrompt));
+      this.messages.push(new HumanMessage(userPrompt));
       try {
         for (let i = 0; i < this.maxSteps && this.isNotFinished; i++) {
           const stepNumber = i + 1;

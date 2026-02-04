@@ -1,22 +1,18 @@
-import { BaseTool, ToolParameter } from './types';
+import { StructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-export class TerminalOperationTool extends BaseTool {
-  name = TerminalOperationTool.name;
+export class TerminalOperationTool extends StructuredTool {
+  name = 'TerminalOperationTool';
   description = 'Execute a command in the terminal';
-  parameters: ToolParameter[] = [
-    {
-      name: 'command',
-      type: 'string',
-      description: 'Command to execute in the terminal',
-      required: true,
-    },
-  ];
+  schema = z.object({
+    command: z.string().describe('Command to execute in the terminal'),
+  });
 
-  async execute(args: { command: string }): Promise<string> {
+  async _call(args: { command: string }): Promise<string> {
     const { command } = args;
     try {
       const isWindows = process.platform === 'win32';
@@ -30,7 +26,7 @@ export class TerminalOperationTool extends BaseTool {
       }
       return stdout;
     } catch (err) {
-      this.logger.error('Executing command error:', err);
+      console.error('Executing command error:', err);
       return 'Executing command error';
     }
   }

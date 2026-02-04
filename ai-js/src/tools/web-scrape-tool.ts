@@ -1,20 +1,16 @@
 import axios from 'axios';
-import { BaseTool, ToolParameter } from './types';
+import { StructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
 import cheerio from 'cheerio';
 
-export class WebScrapeTool extends BaseTool {
-  name = WebScrapeTool.name;
+export class WebScrapeTool extends StructuredTool {
+  name = 'WebScrapeTool';
   description = 'Scrape the content of a web page';
-  parameters: ToolParameter[] = [
-    {
-      name: 'url',
-      type: 'string',
-      description: 'Url of the web page to scrape',
-      required: true,
-    },
-  ];
+  schema = z.object({
+    url: z.string().describe('Url of the web page to scrape'),
+  });
 
-  async execute(args: { url: string }): Promise<string> {
+  async _call(args: { url: string }): Promise<string> {
     const { url } = args;
     try {
       const response = await axios.get(url, {
@@ -35,7 +31,7 @@ export class WebScrapeTool extends BaseTool {
         return data;
       }
     } catch (err) {
-      this.logger.error('Scraping web error:', err);
+      console.error('Scraping web error:', err);
       return 'Scraping web page error';
     }
   }

@@ -1,17 +1,13 @@
 import axios from 'axios';
-import { BaseTool, ToolParameter } from './types';
+import { StructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
 
-export class WebSearchTool extends BaseTool {
-  name = WebSearchTool.name;
+export class WebSearchTool extends StructuredTool {
+  name = 'WebSearchTool';
   description = 'Search for information from web search engine';
-  parameters: ToolParameter[] = [
-    {
-      name: 'query',
-      type: 'string',
-      description: 'Search query keyword',
-      required: true,
-    },
-  ];
+  schema = z.object({
+    query: z.string().describe('Search query keyword'),
+  });
 
   private readonly searchApiUrl = 'https://www.searchapi.io/api/v1/search';
   private readonly apiKey: string;
@@ -21,7 +17,7 @@ export class WebSearchTool extends BaseTool {
     this.apiKey = apiKey ?? process.env.SEARCH_API_KEY ?? '';
   }
 
-  async execute(args: { query: string }): Promise<string> {
+  async _call(args: { query: string }): Promise<string> {
     const { query } = args;
     if (!query) {
       return 'Query parameter is required';
@@ -45,7 +41,7 @@ export class WebSearchTool extends BaseTool {
       const topResults = originalResults.slice(0, 5);
       return JSON.stringify(topResults, null, 2);
     } catch (err) {
-      this.logger.log('Searching web error:', err);
+      console.error('Searching web error:', err);
       return 'Searching web error';
     }
   }
