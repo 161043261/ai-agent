@@ -4,7 +4,7 @@ import { z } from 'zod';
 import cheerio from 'cheerio';
 
 export class WebScrapeTool extends StructuredTool {
-  name = 'WebScrapeTool';
+  name = WebScrapeTool.name;
   description = 'Scrape the content of a web page';
   schema = z.object({
     url: z.string().describe('Url of the web page to scrape'),

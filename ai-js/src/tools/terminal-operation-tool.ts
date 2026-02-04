@@ -6,7 +6,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 export class TerminalOperationTool extends StructuredTool {
-  name = 'TerminalOperationTool';
+  name = TerminalOperationTool.name;
   description = 'Execute a command in the terminal';
   schema = z.object({
     command: z.string().describe('Command to execute in the terminal'),

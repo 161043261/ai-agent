@@ -7,12 +7,12 @@ import {
 } from '@langchain/core/messages';
 
 const CONTEXT_AUGMENT_PROMPT = `
-  Please generate a more complete and specific query based on the conversation history and the current query
+  Please generate a more complete and specific query based on the conversation history and the current query.
   Requirements:
-  1. Understand the user's true by considering the conversational context
+  1. Understand the user's true by considering the conversational context.
   2. Supplement the specific content referred to by pronouns
-  3. Keep the query concise
-  4. Return only the enhanced query text, without any other content
+  3. Keep the query concise.
+  4. Return only the enhanced query text, without any other content.
 `;
 
 export class ContextualQueryAugmenter {

@@ -8,7 +8,7 @@ import { writeFile } from 'fs/promises';
 const OUTPUT_DIR = process.cwd() + '/tmp/download';
 
 export class ResourceDownloadTool extends StructuredTool {
-  name = 'ResourceDownloadTool';
+  name = ResourceDownloadTool.name;
   description = 'Download resource from url';
   schema = z.object({
     url: z.string().describe('Url of the resource to download'),

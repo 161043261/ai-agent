@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
 import { StructuredTool } from '@langchain/core/tools';
-import { Tool, ToolExecutor } from './types';
+import { ToolExecutor } from './types';
 import { ReadFileTool, WriteFileTool } from './file-operation-tool';
 import { WebScrapeTool } from './web-scrape-tool';
 import { ResourceDownloadTool } from './resource-download-tool';
@@ -27,7 +28,7 @@ export class ToolsService implements ToolExecutor {
       const args = JSON.parse(argsJson) as Record<string, unknown>;
       const result = await tool.invoke(args);
       this.logger.log(`Tool ${toolName} execution result: ${result}`);
-      return result;
+      return typeof result === 'string' ? result : JSON.stringify(result);
     } catch (err) {
       this.logger.error(`Error executing tool ${toolName}, error:`, err);
       return `Error executing tool ${toolName}`;
@@ -51,7 +52,7 @@ export class ToolsService implements ToolExecutor {
     }
   }
 
-  getAllTools(): Tool[] {
+  getAllTools(): StructuredTool[] {
     return Array.from(this.tools.values());
   }
 

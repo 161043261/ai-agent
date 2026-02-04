@@ -3,7 +3,7 @@ import { StructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 
 export class WebSearchTool extends StructuredTool {
-  name = 'WebSearchTool';
+  name = WebSearchTool.name;
   description = 'Search for information from web search engine';
   schema = z.object({
     query: z.string().describe('Search query keyword'),

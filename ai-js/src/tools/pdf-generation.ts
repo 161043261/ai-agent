@@ -9,7 +9,7 @@ const OUTPUT_DIR = process.cwd() + '/tmp/pdf';
 const FONT_PATH = process.cwd() + './SarasaGothicSC-Regular.ttf';
 
 export class PdfGenerateTool extends StructuredTool {
-  name = 'PdfGenerateTool';
+  name = PdfGenerateTool.name;
   description = 'Generate a pdf file with content';
   schema = z.object({
     filename: z.string().describe('Generated pdf filename'),

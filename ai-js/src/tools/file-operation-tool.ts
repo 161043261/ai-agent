@@ -7,7 +7,7 @@ import ensureDir from './ensure-dir';
 const OUTPUT_DIR = process.cwd() + '/tmp/file';
 
 export class ReadFileTool extends StructuredTool {
-  name = 'ReadFileTool';
+  name = ReadFileTool.name;
   description = 'Read content from a file';
   schema = z.object({
     filename: z.string().describe('Name of the file to read'),

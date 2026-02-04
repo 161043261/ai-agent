@@ -92,28 +92,36 @@ export class ToolCallAgent extends ReActAgent {
     for (const toolCall of toolCalls) {
       const toolCallId = toolCall.id || crypto.randomUUID();
       try {
-        const result = await this.toolExecutor.execute(
+        const content = await this.toolExecutor.execute(
           toolCall.name,
           JSON.stringify(toolCall.args),
         );
         this.messages.push(
-          new ToolMessage({ content: result, tool_call_id: toolCallId, name: toolCall.name }),
+          new ToolMessage({
+            content,
+            tool_call_id: toolCallId,
+            name: toolCall.name,
+          }),
         );
         // Send each tool's result to SSE
-        this.emitToolResult(toolCall.name, result);
-        results.push(`Tool ${toolCall.name} returned result: ${result}`);
+        this.emitToolResult(toolCall.name, content);
+        results.push(`Tool ${toolCall.name} returned content: ${content}`);
         // Check if a terminate tool was called
         if (toolCall.name === TerminateTool.name) {
           this.state = AgentState.FINISHED;
         }
       } catch (err) {
         this.logger.error(`Executing tool ${toolCall.name} error:`, err);
-        const errResult = `Executing tool ${toolCall.name} error`;
+        const errContent = `Executing tool ${toolCall.name} error`;
         this.messages.push(
-          new ToolMessage({ content: errResult, tool_call_id: toolCallId, name: toolCall.name }),
+          new ToolMessage({
+            content: errContent,
+            tool_call_id: toolCallId,
+            name: toolCall.name,
+          }),
         );
-        this.emitToolResult(toolCall.name, errResult);
-        results.push(errResult);
+        this.emitToolResult(toolCall.name, errContent);
+        results.push(errContent);
       }
     }
 
