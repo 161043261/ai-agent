@@ -25,10 +25,7 @@ import { HealthController } from './controller/health.controller';
     AgentModule,
     AdvisorModule,
   ],
-  controllers: [
-    AiController,
-    HealthController
-  ],
+  controllers: [AiController, HealthController],
   providers: [AppService],
 })
 export class AppModule {}

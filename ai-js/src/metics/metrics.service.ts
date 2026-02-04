@@ -1,9 +1,11 @@
+import { Injectable } from '@nestjs/common';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter, Histogram, Gauge } from 'prom-client';
 
+@Injectable()
 export class MetricsService {
   constructor(
-    @InjectMetric('http_request_total')
+    @InjectMetric('http_requests_total')
     private readonly httpRequestsCounter: Counter<string>,
 
     @InjectMetric('http_request_duration_seconds')

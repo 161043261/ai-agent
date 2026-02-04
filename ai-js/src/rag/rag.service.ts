@@ -40,7 +40,8 @@ export class RagService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    config: Partial<RagConfig>,
+    // TODO
+    // config: Partial<RagConfig> = {},
   ) {
     this.config = {
       enableContextualAugment: true,
@@ -48,7 +49,8 @@ export class RagService implements OnModuleInit {
       enableKeywordEnrich: true,
       tokenTextSplitterChunkOverlap: 200,
       tokenTextSplitterChunkSize: 1000,
-      ...config,
+      // TODO
+      // ...config,
     };
   }
   onModuleInit() {
