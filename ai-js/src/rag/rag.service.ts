@@ -16,43 +16,20 @@ import { Document } from '@langchain/core/documents';
 
 const DOCS_PATH = process.cwd() + './docs/base';
 
-export interface RagConfig {
-  enableQueryRewrite?: boolean;
-  enableContextualAugment?: boolean;
-  enableKeywordEnrich?: boolean;
-  tokenTextSplitterChunkSize?: number;
-  tokenTextSplitterChunkOverlap?: number;
-}
-
 @Injectable()
 export class RagService implements OnModuleInit {
   private readonly logger = new Logger(RagService.name);
   private vectorStore: MemoryVectorStore | null = null;
-  private embeddings: Embeddings;
-  private chatModel: BaseChatModel;
-
-  private documentLoader: DocumentLoader;
+  private embeddings!: Embeddings;
+  private chatModel!: BaseChatModel;
+  private documentLoader!: DocumentLoader;
   private documentRetriever: DocumentRetriever | null = null;
   private queryRewriter: QueryRewriter | null = null;
   private contextualAugmenter: ContextualQueryAugmenter | null = null;
   private keywordEnricher: KeywordEnricher | null = null;
-  private config: RagConfig;
 
-  constructor(
-    private readonly configService: ConfigService,
-    // TODO
-    // config: Partial<RagConfig> = {},
-  ) {
-    this.config = {
-      enableContextualAugment: true,
-      enableQueryRewrite: true,
-      enableKeywordEnrich: true,
-      tokenTextSplitterChunkOverlap: 200,
-      tokenTextSplitterChunkSize: 1000,
-      // TODO
-      // ...config,
-    };
-  }
+  constructor(private readonly configService: ConfigService) {}
+
   onModuleInit() {
     const provider = this.configService.get<LlmProvider>(
       'LLM_PROVIDER',
@@ -63,17 +40,37 @@ export class RagService implements OnModuleInit {
     } else {
       this.initDashscope();
     }
-    if (this.config.enableQueryRewrite) {
-      this.queryRewriter = new QueryRewriter(this.chatModel);
-      this.logger.log('Query rewriter enabled');
-    }
-    if (this.config.enableContextualAugment) {
-      this.contextualAugmenter = new ContextualQueryAugmenter(this.chatModel);
-      this.logger.log('Contextual query augmenter enabled');
-    }
-    if (this.config.enableKeywordEnrich) {
-      this.keywordEnricher = new KeywordEnricher(this.chatModel);
-      this.logger.log('Keyword enricher enabled');
+    this.documentLoader = new DocumentLoader({
+      chunkSize: 1000,
+      chunkOverlap: 200,
+    });
+    this.queryRewriter = new QueryRewriter(this.chatModel);
+    this.logger.log('Query rewriter enabled');
+    this.contextualAugmenter = new ContextualQueryAugmenter(this.chatModel);
+    this.logger.log('Contextual query augmenter enabled');
+    this.keywordEnricher = new KeywordEnricher(this.chatModel);
+    this.logger.log('Keyword enricher enabled');
+  }
+
+  async init(docsPath: string = DOCS_PATH) {
+    try {
+      const docs = await this.documentLoader.loadAndSplit(docsPath);
+      if (docs.length === 0) {
+        this.logger.warn('No documents for RAG');
+        return;
+      }
+      this.vectorStore = await MemoryVectorStore.fromDocuments(
+        docs,
+        this.embeddings,
+      );
+      this.documentRetriever = new DocumentRetriever(
+        this.vectorStore,
+        this.queryRewriter,
+        this.contextualAugmenter,
+      );
+      this.logger.log(`RAG initialized with ${docs.length} chunks`);
+    } catch (err) {
+      this.logger.error('Initialize RAG error:', err);
     }
   }
 
@@ -124,28 +121,6 @@ export class RagService implements OnModuleInit {
     this.logger.log(
       `Dashscope initialized: embedding=${embeddingModel}, chat=${chatModelName}`,
     );
-  }
-
-  async init(docsPath: string = DOCS_PATH) {
-    try {
-      const docs = await this.documentLoader.loadAndSplit(docsPath);
-      if (docs.length == 0) {
-        this.logger.warn('No documents for RAG');
-        return;
-      }
-      this.vectorStore = await MemoryVectorStore.fromDocuments(
-        docs,
-        this.embeddings,
-      );
-      this.documentRetriever = new DocumentRetriever(
-        this.vectorStore,
-        this.queryRewriter,
-        this.contextualAugmenter,
-      );
-      this.logger.log(`RAG initialized with ${docs.length} chunks`);
-    } catch (err) {
-      this.logger.error('Initialize RAG error:', err);
-    }
   }
 
   async retrieve(
