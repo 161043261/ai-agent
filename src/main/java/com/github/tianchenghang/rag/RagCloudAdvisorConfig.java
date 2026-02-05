@@ -8,6 +8,7 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 
+// @Configuration
 public class RagCloudAdvisorConfig {
   @Value("${spring.ai.dashscope.api-key}")
   private String dashscopeApiKey;
