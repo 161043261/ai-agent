@@ -27,6 +27,7 @@ export class RagService implements OnModuleInit {
   private queryRewriter: QueryRewriter | null = null;
   private contextualAugmenter: ContextualQueryAugmenter | null = null;
   private keywordEnricher: KeywordEnricher | null = null;
+  private initializeSuccess: Promise<boolean> | null = null;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -52,12 +53,19 @@ export class RagService implements OnModuleInit {
     this.logger.log('Keyword enricher enabled');
   }
 
-  async init(docsPath: string = DOCS_PATH) {
+  private async ensureInitialized(): Promise<boolean> {
+    if (this.initializeSuccess === null) {
+      this.initializeSuccess = this.initialize();
+    }
+    return this.initializeSuccess;
+  }
+
+  private async initialize(docsPath: string = DOCS_PATH): Promise<boolean> {
     try {
       const docs = await this.documentLoader.loadAndSplit(docsPath);
       if (docs.length === 0) {
         this.logger.warn('No documents for RAG');
-        return;
+        return false;
       }
       this.vectorStore = await MemoryVectorStore.fromDocuments(
         docs,
@@ -69,8 +77,10 @@ export class RagService implements OnModuleInit {
         this.contextualAugmenter,
       );
       this.logger.log(`RAG initialized with ${docs.length} chunks`);
+      return true;
     } catch (err) {
       this.logger.error('Initialize RAG error:', err);
+      return false;
     }
   }
 
@@ -127,22 +137,31 @@ export class RagService implements OnModuleInit {
     query: string,
     chatHistory?: BaseMessage[],
   ): Promise<Document[]> {
+    const ok = await this.ensureInitialized();
+    if (!ok) {
+      return [];
+    }
     return this.documentRetriever?.retrieve(query, chatHistory) ?? [];
   }
 
   async retrieveAsContext(query: string, chatHistory?: BaseMessage[]) {
+    const ok = await this.ensureInitialized();
+    if (!ok) {
+      return '';
+    }
     return this.documentRetriever?.retrieveAsContext(query, chatHistory) ?? '';
   }
 
   async addDocuments(docs: Document[]): Promise<void> {
-    if (!this.vectorStore) {
-      this.logger.warn('Vector store not initialized');
+    const ok = await this.ensureInitialized();
+    if (!ok) {
+      this.logger.warn('RAG not initialized, cannot add documents');
       return;
     }
     if (this.keywordEnricher) {
       docs = await this.keywordEnricher.enrichDocuments(docs);
     }
-    await this.vectorStore.addDocuments(docs);
+    await this.vectorStore!.addDocuments(docs);
     this.logger.log(`Added ${docs.length} documents to vector store`);
   }
 
