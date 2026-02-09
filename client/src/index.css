@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+/* Apple Style Light Green Theme */
+@theme {
+  /* Primary Green Colors - Apple Mint Green */
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #34d399;
+  --color-primary-600: #10b981;
+  --color-primary-700: #059669;
+  --color-primary-800: #047857;
+  --color-primary-900: #065f46;
+
+  /* Neutral Colors - Apple Style Grays */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f7;
+  --color-gray-200: #e8e8ed;
+  --color-gray-300: #d2d2d7;
+  --color-gray-400: #86868b;
+  --color-gray-500: #6e6e73;
+  --color-gray-600: #424245;
+  --color-gray-700: #1d1d1f;
+
+  /* Shadows */
+  --shadow-apple: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-apple-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Base Styles */
+html {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  @apply min-h-screen bg-gray-50 text-gray-700;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-gray-300;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Markdown Content Styles */
+.markdown-content {
+  @apply leading-relaxed;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  @apply mt-4 mb-2 font-semibold text-gray-700;
+}
+
+.markdown-content h1 {
+  @apply text-2xl;
+}
+
+.markdown-content h2 {
+  @apply text-xl;
+}
+
+.markdown-content h3 {
+  @apply text-lg;
+}
+
+.markdown-content p {
+  @apply mb-3;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply mb-3 pl-5;
+}
+
+.markdown-content li {
+  @apply mb-1;
+}
+
+.markdown-content ul {
+  @apply list-disc;
+}
+
+.markdown-content ol {
+  @apply list-decimal;
+}
+
+.markdown-content code {
+  @apply bg-primary-50 text-primary-700 rounded-lg px-1.5 py-0.5 font-mono text-sm;
+}
+
+.markdown-content pre {
+  @apply mb-3 overflow-x-auto rounded-lg bg-gray-700 p-4 text-gray-100;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+
+.markdown-content blockquote {
+  @apply border-primary-300 my-3 border-l-4 pl-4 text-gray-500 italic;
+}
+
+.markdown-content a {
+  @apply text-primary-600 hover:text-primary-700 underline;
+}
+
+.markdown-content table {
+  @apply mb-3 w-full border-collapse;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border border-gray-200 px-3 py-2 text-left;
+}
+
+.markdown-content th {
+  @apply bg-primary-50 font-semibold;
+}
