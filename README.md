@@ -1,4 +1,4 @@
-# ai-code
+# AI Agent
 
 ## git worktree
 
