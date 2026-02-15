@@ -1,7 +1,7 @@
 {
-  "name": "server",
+  "name": "@ai-agent/server",
   "version": "0.0.1",
-  "description": "AI Code",
+  "description": "AI Agent",
   "author": "",
   "private": true,
   "license": "MIT",
