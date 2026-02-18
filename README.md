@@ -3,28 +3,12 @@
 ## git worktree
 
 ```bash
-git worktree add ../ai-code-dev dev
+git worktree add ../ai-agent-dev dev
 git worktree list
-git worktree remove ../ai-code-dev
+git worktree remove ../ai-agent-dev
 ```
 
 .git/hooks/pre-commit
-
-```bash
-#!/bin/bash
-
-echo "run mvn fmt:format"
-
-mvn com.spotify.fmt:fmt-maven-plugin:format -q
-
-if ! git diff --quiet; then
-  echo "run git add -u"
-  git add -u
-fi
-
-echo "format ok"
-exit 0
-```
 
 ## 大模型
 
